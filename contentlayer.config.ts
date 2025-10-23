@@ -100,8 +100,26 @@ export const Blog = defineDocumentType(() => ({
   fields: {
     title: { type: 'string', required: true },
     date: { type: 'date', required: true },
+
     tags: { type: 'list', of: { type: 'string' }, default: [] },
     lastmod: { type: 'date' },
+
+    lang: { type: 'enum', options: [...LANGS], required: true },
+    toc: { type: 'boolean', default: true },
+
+    tags: { type: 'list', of: { type: 'string' }, default: [] },
+    stacks: {
+      type: 'list',
+      of: { type: 'enum', options: [...STACKS] },
+      default: [],
+    },
+    topics: {
+      type: 'list',
+      of: { type: 'enum', options: [...TOPICS] },
+      default: [],
+    },
+    lastmod: { type: 'date', required: false },
+
     draft: { type: 'boolean' },
     summary: { type: 'string' },
     images: { type: 'json' },
@@ -110,8 +128,16 @@ export const Blog = defineDocumentType(() => ({
     bibliography: { type: 'string' },
     canonicalUrl: { type: 'string' },
   },
+
   computedFields: {
     ...computedFields,
+
+    slug: { type: 'string', resolve: (doc) => doc._raw.flattenedPath.replace(/^.+?\//, '') },
+    path: { type: 'string', resolve: (doc) => doc._raw.flattenedPath },
+    filePath: { type: 'string', resolve: (doc) => doc._raw.sourceFilePath },
+    readingTime: { type: 'json', resolve: (doc) => readingTime(doc.body.raw) },
+    toc: { type: 'json', resolve: (doc) => extractTocHeadings(doc.body.raw) },
+
     structuredData: {
       type: 'json',
       resolve: (doc) => ({
@@ -122,7 +148,8 @@ export const Blog = defineDocumentType(() => ({
         dateModified: doc.lastmod || doc.date,
         description: doc.summary,
         image: doc.images ? doc.images[0] : siteMetadata.socialBanner,
-        url: `${siteMetadata.siteUrl}/${doc._raw.flattenedPath}`,
+
+        url: `${siteMetadata.siteUrl}/${doc.lang}/blog/${doc.slug}`,
       }),
     },
   },

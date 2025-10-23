@@ -17,14 +17,14 @@ interface PaginationProps {
 interface ListLayoutProps {
   posts: CoreContent<Blog>[]
   title: string
+  lang: string
   initialDisplayPosts?: CoreContent<Blog>[]
   pagination?: PaginationProps
 }
 
-function Pagination({ totalPages, currentPage }: PaginationProps) {
+function Pagination({ totalPages, currentPage, lang }: PaginationProps & { lang: string }) {
   const pathname = usePathname()
   const segments = pathname.split('/')
-  const lastSegment = segments[segments.length - 1]
   const basePath = pathname
     .replace(/^\//, '') // Remove leading slash
     .replace(/\/page\/\d+\/?$/, '') // Remove any trailing /page
@@ -69,6 +69,7 @@ function Pagination({ totalPages, currentPage }: PaginationProps) {
 export default function ListLayoutWithTags({
   posts,
   title,
+  lang,
   initialDisplayPosts = [],
   pagination,
 }: ListLayoutProps) {
@@ -90,11 +91,11 @@ export default function ListLayoutWithTags({
         <div className="flex sm:space-x-24">
           <div className="hidden h-full max-h-screen max-w-[280px] min-w-[280px] flex-wrap overflow-auto rounded-sm bg-gray-50 pt-5 shadow-md sm:flex dark:bg-gray-900/70 dark:shadow-gray-800/40">
             <div className="px-6 py-4">
-              {pathname.startsWith('/blog') ? (
+              {pathname.startsWith(`/${lang}/blog`) ? (
                 <h3 className="text-primary-500 font-bold uppercase">All Posts</h3>
               ) : (
                 <Link
-                  href={`/blog`}
+                  href={`/${lang}/blog`}
                   className="hover:text-primary-500 dark:hover:text-primary-500 font-bold text-gray-700 uppercase dark:text-gray-300"
                 >
                   All Posts
@@ -110,7 +111,7 @@ export default function ListLayoutWithTags({
                         </h3>
                       ) : (
                         <Link
-                          href={`/tags/${slug(t)}`}
+                          href={`/${lang}/tags/${slug(t)}`}
                           className="hover:text-primary-500 dark:hover:text-primary-500 px-3 py-2 text-sm font-medium text-gray-500 uppercase dark:text-gray-300"
                           aria-label={`View posts tagged ${t}`}
                         >
@@ -141,12 +142,17 @@ export default function ListLayoutWithTags({
                       <div className="space-y-3">
                         <div>
                           <h2 className="text-2xl leading-8 font-bold tracking-tight">
-                            <Link href={`/${path}`} className="text-gray-900 dark:text-gray-100">
+                            <Link
+                              href={`/${lang}/blog/${post.slug}`}
+                              className="text-gray-900 dark:text-gray-100"
+                            >
                               {title}
                             </Link>
                           </h2>
                           <div className="flex flex-wrap">
-                            {tags?.map((tag) => <Tag key={tag} text={tag} />)}
+                            {tags?.map((tag) => (
+                              <Tag key={tag} text={tag} lang={lang} />
+                            ))}
                           </div>
                         </div>
                         <div className="prose max-w-none text-gray-500 dark:text-gray-400">
@@ -159,7 +165,11 @@ export default function ListLayoutWithTags({
               })}
             </ul>
             {pagination && pagination.totalPages > 1 && (
-              <Pagination currentPage={pagination.currentPage} totalPages={pagination.totalPages} />
+              <Pagination
+                currentPage={pagination.currentPage}
+                totalPages={pagination.totalPages}
+                lang={lang}
+              />
             )}
           </div>
         </div>

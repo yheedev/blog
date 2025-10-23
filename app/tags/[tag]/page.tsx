@@ -10,7 +10,7 @@ import { Metadata } from 'next'
 const POSTS_PER_PAGE = 5
 
 export async function generateMetadata(props: {
-  params: Promise<{ tag: string }>
+  params: Promise<{ tag: string; lang: string }>
 }): Promise<Metadata> {
   const params = await props.params
   const tag = decodeURI(params.tag)
@@ -34,13 +34,21 @@ export const generateStaticParams = async () => {
   }))
 }
 
-export default async function TagPage(props: { params: Promise<{ tag: string }> }) {
+export default async function TagPage(props: { params: Promise<{ tag: string; lang: string }> }) {
   const params = await props.params
   const tag = decodeURI(params.tag)
+  const lang = params.lang
+
   const title = tag[0].toUpperCase() + tag.split(' ').join('-').slice(1)
+
   const filteredPosts = allCoreContent(
-    sortPosts(allBlogs.filter((post) => post.tags && post.tags.map((t) => slug(t)).includes(tag)))
+    sortPosts(
+      allBlogs.filter(
+        (post) => post.lang === lang && post.tags && post.tags.map((t) => slug(t)).includes(tag)
+      )
+    )
   )
+
   const totalPages = Math.ceil(filteredPosts.length / POSTS_PER_PAGE)
   const initialDisplayPosts = filteredPosts.slice(0, POSTS_PER_PAGE)
   const pagination = {
@@ -54,6 +62,7 @@ export default async function TagPage(props: { params: Promise<{ tag: string }> 
       initialDisplayPosts={initialDisplayPosts}
       pagination={pagination}
       title={title}
+      lang={lang}
     />
   )
 }

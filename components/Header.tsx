@@ -7,6 +7,7 @@ import Link from './Link'
 import MobileNav from './MobileNav'
 import ThemeSwitch from './ThemeSwitch'
 import SearchButton from './SearchButton'
+import LanguageSwitcher from './LanguageSwitcher'
 import { usePathname } from 'next/navigation'
 
 const Header = () => {
@@ -47,6 +48,7 @@ const Header = () => {
             </Link>
           ))}
         </div>
+        <LanguageSwitcher />
         <SearchButton />
         <ThemeSwitch />
         <MobileNav />

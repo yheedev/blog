@@ -1,5 +1,6 @@
 import { defineDocumentType, ComputedFields, makeSource } from 'contentlayer2/source-files'
 import { writeFileSync } from 'fs'
+import { execSync } from 'child_process'
 import readingTime from 'reading-time'
 import { slug } from 'github-slugger'
 import path from 'path'
@@ -29,6 +30,30 @@ import prettier from 'prettier'
 
 const root = process.cwd()
 const isProduction = process.env.NODE_ENV === 'production'
+
+/**
+ * Git 히스토리에서 파일의 생성일과 수정일을 가져옵니다
+ */
+function getGitTimestamps(filePath: string): { created: string; modified: string } {
+  try {
+    // 파일의 첫 커밋 날짜 (생성일)
+    const created = execSync(`git log --follow --format=%aI --reverse "${filePath}" | head -1`)
+      .toString()
+      .trim()
+
+    // 파일의 마지막 커밋 날짜 (수정일)
+    const modified = execSync(`git log -1 --format=%aI "${filePath}"`).toString().trim()
+
+    return {
+      created: created || new Date().toISOString(),
+      modified: modified || new Date().toISOString(),
+    }
+  } catch (error) {
+    // Git 히스토리가 없는 경우 현재 시간 사용
+    const now = new Date().toISOString()
+    return { created: now, modified: now }
+  }
+}
 
 // heroicon mini link
 const icon = fromHtmlIsomorphic(
@@ -132,6 +157,22 @@ export const Blog = defineDocumentType(() => ({
     filePath: { type: 'string', resolve: (doc) => doc._raw.sourceFilePath },
     readingTime: { type: 'json', resolve: (doc) => readingTime(doc.body.raw) },
     toc: { type: 'json', resolve: (doc) => extractTocHeadings(doc.body.raw) },
+
+    // Git 히스토리에서 생성일/수정일 자동 추출
+    createdAt: {
+      type: 'date',
+      resolve: (doc) => {
+        const timestamps = getGitTimestamps(doc._raw.sourceFilePath)
+        return timestamps.created
+      },
+    },
+    modifiedAt: {
+      type: 'date',
+      resolve: (doc) => {
+        const timestamps = getGitTimestamps(doc._raw.sourceFilePath)
+        return timestamps.modified
+      },
+    },
 
     structuredData: {
       type: 'json',

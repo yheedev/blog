@@ -4,7 +4,11 @@
       "Bash(npm run build:*)",
       "Bash(npm install:*)",
       "Bash(yarn install)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(mkdir:*)",
+      "Bash(npm run dev:*)",
+      "Bash(powershell -Command \"Get-Process -Name node -ErrorAction SilentlyContinue | Stop-Process -Force\")",
+      "Bash(yarn cache clean:*)"
     ],
     "deny": [],
     "ask": []

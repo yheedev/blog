@@ -29,7 +29,7 @@ interface LayoutProps {
 }
 
 export default function PostLayout({ content, next, prev, children }: LayoutProps) {
-  const { filePath, path, slug, date, title, tags, toc, lang } = content
+  const { filePath, path, slug, date, title, tags, toc, lang, createdAt, modifiedAt } = content
   const basePath = path.split('/')[0]
 
   return (
@@ -49,6 +49,28 @@ export default function PostLayout({ content, next, prev, children }: LayoutProp
                   </dd>
                 </div>
               </dl>
+              {createdAt && modifiedAt && (
+                <dl className="flex justify-center gap-4 text-sm text-gray-500 dark:text-gray-400">
+                  <div>
+                    <dt className="inline">최초 작성: </dt>
+                    <dd className="inline">
+                      <time dateTime={createdAt}>
+                        {new Date(createdAt).toLocaleDateString('ko-KR')}
+                      </time>
+                    </dd>
+                  </div>
+                  {createdAt !== modifiedAt && (
+                    <div>
+                      <dt className="inline">마지막 수정: </dt>
+                      <dd className="inline">
+                        <time dateTime={modifiedAt}>
+                          {new Date(modifiedAt).toLocaleDateString('ko-KR')}
+                        </time>
+                      </dd>
+                    </div>
+                  )}
+                </dl>
+              )}
               <div>
                 <PageTitle>{title}</PageTitle>
               </div>

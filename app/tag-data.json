@@ -1,15 +1,15 @@
 {
-  "markdown": 1,
-  "code": 1,
-  "features": 1,
-  "github": 1,
-  "guide": 5,
-  "next-js": 5,
-  "tailwind": 3,
-  "hello": 1,
+  "next-js": 4,
+  "tailwind": 2,
+  "guide": 4,
   "feature": 2,
+  "multi-author": 1,
+  "hello": 1,
+  "github": 1,
   "writings": 1,
   "book": 1,
   "reflection": 1,
-  "multi-author": 1
+  "markdown": 1,
+  "code": 1,
+  "features": 1
 }

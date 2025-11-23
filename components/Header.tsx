@@ -8,6 +8,7 @@ import ThemeSwitch from './ThemeSwitch'
 import SearchButton from './SearchButton'
 import LanguageSwitcher from './LanguageSwitcher'
 import { usePathname } from 'next/navigation'
+import { Suspense } from 'react'
 
 const Header = () => {
   let headerClass = 'flex items-center w-full bg-white dark:bg-gray-950 justify-between py-10'
@@ -47,7 +48,9 @@ const Header = () => {
             </Link>
           ))}
         </div>
-        <LanguageSwitcher />
+        <Suspense fallback={<div className="h-8 w-8" />}>
+          <LanguageSwitcher />
+        </Suspense>
         <SearchButton />
         <ThemeSwitch />
         <MobileNav />

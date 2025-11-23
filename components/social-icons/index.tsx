@@ -3,14 +3,14 @@ import {
   Github,
   // Facebook,
   Youtube,
-  // Linkedin,
-  // Twitter,
-  // X,
+  Linkedin,
+  Twitter,
+  X,
   // Mastodon,
   // Threads,
   // Instagram,
   // Medium,
-  // Bluesky,
+  Bluesky,
 } from './icons'
 
 const components = {
@@ -18,14 +18,14 @@ const components = {
   github: Github,
   // facebook: Facebook,
   youtube: Youtube,
-  // linkedin: Linkedin,
-  // twitter: Twitter,
-  // x: X,
+  linkedin: Linkedin,
+  twitter: Twitter,
+  x: X,
   // mastodon: Mastodon,
   // threads: Threads,
   // instagram: Instagram,
   // medium: Medium,
-  // bluesky: Bluesky,
+  bluesky: Bluesky,
 }
 
 type SocialIconProps = {

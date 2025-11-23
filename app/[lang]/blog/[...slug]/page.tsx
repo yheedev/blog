@@ -17,6 +17,7 @@ export async function generateStaticParams() {
   return allBlogs
     .filter((post) => !post.draft)
     .map((post) => ({
+      lang: post.lang,
       slug: post.slug.split('/'),
     }))
 }

@@ -1,14 +1,8 @@
-// components/LanguageSwitcher.tsx
 'use client'
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useMemo, useState } from 'react'
-
-const LOCALES = [
-  { code: 'ko', label: '한국어' },
-  { code: 'en', label: 'English' },
-  { code: 'ja', label: '日本語' },
-] as const
+import { LANGS, LANG_LABELS, type Lang } from '@/lib/types'
 
 function replaceLang(pathname: string, nextLang: string) {
   // 예) /ko/blog/new → /en/blog/new
@@ -44,7 +38,7 @@ export default function LanguageSwitcher() {
         aria-haspopup="menu"
         aria-expanded={open}
       >
-        {LOCALES.find((l) => l.code === currentLang)?.label ?? '한국어'}
+        {LANG_LABELS[currentLang as Lang] ?? LANG_LABELS.ko}
       </button>
 
       {open && (
@@ -52,18 +46,18 @@ export default function LanguageSwitcher() {
           role="menu"
           className="absolute right-0 mt-2 w-32 rounded-md border bg-white p-1 shadow-lg dark:border-gray-700 dark:bg-gray-900"
         >
-          {LOCALES.map((loc) => (
-            <li key={loc.code}>
+          {LANGS.map((lang) => (
+            <li key={lang}>
               <button
                 role="menuitem"
                 className={`w-full rounded px-3 py-2 text-left text-sm ${
-                  loc.code === currentLang
+                  lang === currentLang
                     ? 'bg-gray-100 font-semibold dark:bg-gray-800'
                     : 'hover:bg-gray-100 dark:hover:bg-gray-800'
                 }`}
-                onClick={() => onSelect(loc.code)}
+                onClick={() => onSelect(lang)}
               >
-                {loc.label}
+                {LANG_LABELS[lang]}
               </button>
             </li>
           ))}

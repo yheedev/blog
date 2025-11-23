@@ -18,6 +18,7 @@ interface ListLayoutProps {
   title: string
   initialDisplayPosts?: CoreContent<Blog>[]
   pagination?: PaginationProps
+  lang?: string
 }
 
 function Pagination({ totalPages, currentPage }: PaginationProps) {
@@ -70,6 +71,7 @@ export default function ListLayout({
   title,
   initialDisplayPosts = [],
   pagination,
+  lang = 'ko',
 }: ListLayoutProps) {
   const [searchValue, setSearchValue] = useState('')
   const filteredBlogPosts = posts.filter((post) => {

@@ -12,6 +12,7 @@ export const STACKS = [
   'TanStack Query',
   'Tailwind',
   'Styled-Components',
+  'Vercel',
   'AWS',
 ] as const
 

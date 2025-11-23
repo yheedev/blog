@@ -3,13 +3,16 @@ import Tag from '@/components/Tag'
 import { slug } from 'github-slugger'
 import tagData from 'app/tag-data.json'
 import { genPageMetadata } from 'app/seo'
+import { Lang } from '@/lib/types'
 
 export const metadata = genPageMetadata({ title: 'Tags', description: 'Things I blog about' })
 
-export default async function Page() {
+export default async function Page({ params }: { params: Promise<{ lang: Lang }> }) {
+  const { lang } = await params
   const tagCounts = tagData as Record<string, number>
   const tagKeys = Object.keys(tagCounts)
   const sortedTags = tagKeys.sort((a, b) => tagCounts[b] - tagCounts[a])
+
   return (
     <>
       <div className="flex flex-col items-start justify-start divide-y divide-gray-200 md:mt-24 md:flex-row md:items-center md:justify-center md:space-x-6 md:divide-y-0 dark:divide-gray-700">
@@ -23,9 +26,9 @@ export default async function Page() {
           {sortedTags.map((t) => {
             return (
               <div key={t} className="mt-2 mr-5 mb-2">
-                <Tag text={t} />
+                <Tag text={t} lang={lang} />
                 <Link
-                  href={`/tags/${slug(t)}`}
+                  href={`/${lang}/tags/${slug(t)}`}
                   className="-ml-2 text-sm font-semibold text-gray-600 uppercase dark:text-gray-300"
                   aria-label={`View posts tagged ${t}`}
                 >

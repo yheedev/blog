@@ -4,6 +4,7 @@ import readingTime from 'reading-time'
 import { slug } from 'github-slugger'
 import path from 'path'
 import { fromHtmlIsomorphic } from 'hast-util-from-html-isomorphic'
+import { LANGS, STACKS, TOPICS } from './lib/types'
 // Remark packages
 import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
@@ -100,13 +101,8 @@ export const Blog = defineDocumentType(() => ({
   fields: {
     title: { type: 'string', required: true },
     date: { type: 'date', required: true },
-
-    tags: { type: 'list', of: { type: 'string' }, default: [] },
-    lastmod: { type: 'date' },
-
     lang: { type: 'enum', options: [...LANGS], required: true },
     toc: { type: 'boolean', default: true },
-
     tags: { type: 'list', of: { type: 'string' }, default: [] },
     stacks: {
       type: 'list',
@@ -119,7 +115,6 @@ export const Blog = defineDocumentType(() => ({
       default: [],
     },
     lastmod: { type: 'date', required: false },
-
     draft: { type: 'boolean' },
     summary: { type: 'string' },
     images: { type: 'json' },
@@ -155,28 +150,9 @@ export const Blog = defineDocumentType(() => ({
   },
 }))
 
-export const Authors = defineDocumentType(() => ({
-  name: 'Authors',
-  filePathPattern: 'authors/**/*.mdx',
-  contentType: 'mdx',
-  fields: {
-    name: { type: 'string', required: true },
-    avatar: { type: 'string' },
-    occupation: { type: 'string' },
-    company: { type: 'string' },
-    email: { type: 'string' },
-    twitter: { type: 'string' },
-    bluesky: { type: 'string' },
-    linkedin: { type: 'string' },
-    github: { type: 'string' },
-    layout: { type: 'string' },
-  },
-  computedFields,
-}))
-
 export default makeSource({
   contentDirPath: 'data',
-  documentTypes: [Blog, Authors],
+  documentTypes: [Blog],
   mdx: {
     cwd: process.cwd(),
     remarkPlugins: [

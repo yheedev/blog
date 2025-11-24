@@ -21,7 +21,7 @@ interface Props {
 
 export default function TOCSidebar({
   container = 'article',
-  headings = 'h2, h3',
+  headings = 'h1, h2, h3, h4, h5, h6',
   offsetTop = 96,
   defaultEnabled = true,
   storageKey = 'toc:enabled',
@@ -93,7 +93,7 @@ export default function TOCSidebar({
 
   // --- 렌더
   return (
-    <aside className={clsx('hidden xl:block')}>
+    <aside className={clsx('hidden xl:block xl:self-start')}>
       <div className="sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto pl-4">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400">
@@ -112,7 +112,14 @@ export default function TOCSidebar({
           <nav aria-label="Table of contents">
             <ul className="space-y-1 text-sm">
               {items.map((it) => (
-                <li key={it.id} className={clsx(it.depth >= 3 && 'pl-4')}>
+                <li
+                  key={it.id}
+                  className={clsx(
+                    it.depth === 2 && 'pl-2',
+                    it.depth === 3 && 'pl-4',
+                    it.depth >= 4 && 'pl-6'
+                  )}
+                >
                   <a
                     href={`#${it.id}`}
                     onClick={(e) => {

@@ -31,6 +31,19 @@ import prettier from 'prettier'
 const root = process.cwd()
 const isProduction = process.env.NODE_ENV === 'production'
 
+// Git 타임스탬프 캐시 (중복 호출 방지)
+const timestampCache = new Map<string, { created: string; modified: string }>()
+
+/**
+ * Git 히스토리에서 파일의 생성일과 수정일을 가져옵니다 (캐시 사용)
+ */
+function getCachedGitTimestamps(filePath: string): { created: string; modified: string } {
+  if (!timestampCache.has(filePath)) {
+    timestampCache.set(filePath, getGitTimestamps(filePath))
+  }
+  return timestampCache.get(filePath)!
+}
+
 /**
  * Git 히스토리에서 파일의 생성일과 수정일을 가져옵니다
  */
@@ -158,18 +171,18 @@ export const Blog = defineDocumentType(() => ({
     readingTime: { type: 'json', resolve: (doc) => readingTime(doc.body.raw) },
     toc: { type: 'json', resolve: (doc) => extractTocHeadings(doc.body.raw) },
 
-    // Git 히스토리에서 생성일/수정일 자동 추출
+    // Git 히스토리에서 생성일/수정일 자동 추출. getCachedGitTimestamps를 사용하여 문서당 한 번만 Git 명령 실행
     createdAt: {
       type: 'date',
       resolve: (doc) => {
-        const timestamps = getGitTimestamps(doc._raw.sourceFilePath)
+        const timestamps = getCachedGitTimestamps(doc._raw.sourceFilePath)
         return timestamps.created
       },
     },
     modifiedAt: {
       type: 'date',
       resolve: (doc) => {
-        const timestamps = getGitTimestamps(doc._raw.sourceFilePath)
+        const timestamps = getCachedGitTimestamps(doc._raw.sourceFilePath)
         return timestamps.modified
       },
     },

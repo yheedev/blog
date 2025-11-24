@@ -54,14 +54,12 @@ function getGitTimestamps(filePath: string): { created: string; modified: string
   try {
     // Contentlayer는 'blog/test.mdx'를 전달하지만, Git은 'data/blog/test.mdx'를 원함
     const gitPath = `data/${filePath}`
-    console.log('🔍 Getting timestamps for:', gitPath)
 
     // 파일의 첫 커밋 날짜 (생성일) - Windows 호환
     const createdOutput = execSync(`git log --follow --format=%aI --reverse "${gitPath}"`, {
       encoding: 'utf-8',
     })
     const created = createdOutput.split('\n')[0].trim()
-    console.log('  ✅ Created:', created)
 
     // 파일의 마지막 커밋 날짜 (수정일)
     const modified = execSync(`git log -1 --format=%aI "${gitPath}"`, {
@@ -69,15 +67,12 @@ function getGitTimestamps(filePath: string): { created: string; modified: string
     })
       .toString()
       .trim()
-    console.log('  ✅ Modified:', modified)
 
     return {
       created: created || new Date().toISOString(),
       modified: modified || new Date().toISOString(),
     }
   } catch (error) {
-    // Git 히스토리가 없는 경우 현재 시간 사용
-    console.error(`❌ Git timestamp error for ${filePath}:`, error.message)
     const now = new Date().toISOString()
     return { created: now, modified: now }
   }
@@ -143,7 +138,6 @@ function createSearchIndex(allBlogs) {
       `public/${path.basename(siteMetadata.search.kbarConfig.searchDocumentsPath)}`,
       JSON.stringify(allCoreContent(sortPosts(allBlogs)))
     )
-    console.log('Local search index generated...')
   }
 }
 

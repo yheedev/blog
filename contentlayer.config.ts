@@ -181,7 +181,10 @@ export const Blog = defineDocumentType(() => ({
     ...computedFields,
 
     slug: { type: 'string', resolve: (doc) => doc._raw.flattenedPath.replace(/^.+?\//, '') },
-    path: { type: 'string', resolve: (doc) => doc._raw.flattenedPath },
+    path: {
+      type: 'string',
+      resolve: (doc) => `${doc.lang}/blog/${doc._raw.flattenedPath.replace(/^.+?\//, '')}`,
+    },
     filePath: { type: 'string', resolve: (doc) => doc._raw.sourceFilePath },
     readingTime: { type: 'json', resolve: (doc) => readingTime(doc.body.raw) },
     toc: { type: 'json', resolve: (doc) => extractTocHeadings(doc.body.raw) },

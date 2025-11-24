@@ -7,7 +7,7 @@ import tagData from 'app/tag-data.json'
 import { genPageMetadata } from 'app/seo'
 import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { Lang } from '@/lib/types'
+import { Lang, LANGS } from '@/lib/types'
 
 export async function generateMetadata(props: {
   params: Promise<{ tag: string; lang: Lang }>
@@ -30,7 +30,7 @@ export const generateStaticParams = async () => {
   const tagCounts = tagData as Record<string, number>
   const tagKeys = Object.keys(tagCounts)
   const paths = tagKeys.flatMap((tag) =>
-    ['ko', 'en', 'ja'].map((lang) => ({
+    (LANGS as readonly string[]).map((lang) => ({
       tag: encodeURI(tag),
       lang,
     }))

@@ -38,10 +38,13 @@ const timestampCache = new Map<string, { created: string; modified: string }>()
  * Git 히스토리에서 파일의 생성일과 수정일을 가져옵니다 (캐시 사용)
  */
 function getCachedGitTimestamps(filePath: string): { created: string; modified: string } {
-  if (!timestampCache.has(filePath)) {
-    timestampCache.set(filePath, getGitTimestamps(filePath))
-  }
-  return timestampCache.get(filePath)!
+  // 임시로 캐시 비활성화 - 디버깅용
+  return getGitTimestamps(filePath)
+
+  // if (!timestampCache.has(filePath)) {
+  //   timestampCache.set(filePath, getGitTimestamps(filePath))
+  // }
+  // return timestampCache.get(filePath)!
 }
 
 /**
@@ -49,13 +52,24 @@ function getCachedGitTimestamps(filePath: string): { created: string; modified: 
  */
 function getGitTimestamps(filePath: string): { created: string; modified: string } {
   try {
-    // 파일의 첫 커밋 날짜 (생성일)
-    const created = execSync(`git log --follow --format=%aI --reverse "${filePath}" | head -1`)
-      .toString()
-      .trim()
+    // Contentlayer는 'blog/test.mdx'를 전달하지만, Git은 'data/blog/test.mdx'를 원함
+    const gitPath = `data/${filePath}`
+    console.log('🔍 Getting timestamps for:', gitPath)
+
+    // 파일의 첫 커밋 날짜 (생성일) - Windows 호환
+    const createdOutput = execSync(`git log --follow --format=%aI --reverse "${gitPath}"`, {
+      encoding: 'utf-8',
+    })
+    const created = createdOutput.split('\n')[0].trim()
+    console.log('  ✅ Created:', created)
 
     // 파일의 마지막 커밋 날짜 (수정일)
-    const modified = execSync(`git log -1 --format=%aI "${filePath}"`).toString().trim()
+    const modified = execSync(`git log -1 --format=%aI "${gitPath}"`, {
+      encoding: 'utf-8',
+    })
+      .toString()
+      .trim()
+    console.log('  ✅ Modified:', modified)
 
     return {
       created: created || new Date().toISOString(),
@@ -63,6 +77,7 @@ function getGitTimestamps(filePath: string): { created: string; modified: string
     }
   } catch (error) {
     // Git 히스토리가 없는 경우 현재 시간 사용
+    console.error(`❌ Git timestamp error for ${filePath}:`, error.message)
     const now = new Date().toISOString()
     return { created: now, modified: now }
   }

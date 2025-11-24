@@ -60,7 +60,14 @@ export default function PostLayout({ content, next, prev, children }: LayoutProp
                     <dt className="inline">{labels.created[currentLang]}: </dt>
                     <dd className="inline">
                       <time dateTime={createdAt}>
-                        {new Date(createdAt).toLocaleDateString(dateLocale)}
+                        {new Date(createdAt).toLocaleString(dateLocale, {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          hour12: false,
+                        })}
                       </time>
                     </dd>
                   </div>
@@ -69,7 +76,14 @@ export default function PostLayout({ content, next, prev, children }: LayoutProp
                       <dt className="inline">{labels.modified[currentLang]}: </dt>
                       <dd className="inline">
                         <time dateTime={modifiedAt}>
-                          {new Date(modifiedAt).toLocaleDateString(dateLocale)}
+                          {new Date(modifiedAt).toLocaleString(dateLocale, {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            hour12: false,
+                          })}
                         </time>
                       </dd>
                     </div>

@@ -9,6 +9,8 @@ import Tag from '@/components/Tag'
 import siteMetadata from '@/data/siteMetadata'
 import ScrollTopAndComment from '@/components/ScrollTopAndComment'
 import TOCSidebar from '@/components/TOCSidebar'
+import { i18nLabels, dateLocaleMap } from '@/data/i18n'
+import type { Lang } from '@/lib/types'
 
 const editUrl = (path) => `${siteMetadata.siteRepo}/blob/main/data/${path}`
 const discussUrl = (path) =>
@@ -29,8 +31,11 @@ interface LayoutProps {
 }
 
 export default function PostLayout({ content, next, prev, children }: LayoutProps) {
-  const { filePath, path, slug, date, title, tags, toc, lang } = content
+  const { filePath, path, slug, date, title, tags, toc, lang, createdAt, modifiedAt } = content
   const basePath = path.split('/')[0]
+  const currentLang = (lang || 'ko') as Lang
+  const labels = i18nLabels.post
+  const dateLocale = dateLocaleMap[currentLang]
 
   return (
     <SectionContainer>
@@ -44,11 +49,47 @@ export default function PostLayout({ content, next, prev, children }: LayoutProp
                   <dt className="sr-only">Published on</dt>
                   <dd className="text-base leading-6 font-medium text-gray-500 dark:text-gray-400">
                     <time dateTime={date}>
-                      {new Date(date).toLocaleDateString(siteMetadata.locale, postDateTemplate)}
+                      {new Date(date).toLocaleDateString(dateLocale, postDateTemplate)}
                     </time>
                   </dd>
                 </div>
               </dl>
+              {createdAt && modifiedAt && (
+                <dl className="flex justify-center gap-4 text-sm text-gray-500 dark:text-gray-400">
+                  <div>
+                    <dt className="inline">{labels.created[currentLang]}: </dt>
+                    <dd className="inline">
+                      <time dateTime={createdAt}>
+                        {new Date(createdAt).toLocaleString(dateLocale, {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          hour12: false,
+                        })}
+                      </time>
+                    </dd>
+                  </div>
+                  {createdAt !== modifiedAt && (
+                    <div>
+                      <dt className="inline">{labels.modified[currentLang]}: </dt>
+                      <dd className="inline">
+                        <time dateTime={modifiedAt}>
+                          {new Date(modifiedAt).toLocaleString(dateLocale, {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            hour12: false,
+                          })}
+                        </time>
+                      </dd>
+                    </div>
+                  )}
+                </dl>
+              )}
               <div>
                 <PageTitle>{title}</PageTitle>
               </div>
@@ -82,7 +123,7 @@ export default function PostLayout({ content, next, prev, children }: LayoutProp
                 {tags && (
                   <div className="py-4 xl:py-8">
                     <h2 className="text-xs tracking-wide text-gray-500 uppercase dark:text-gray-400">
-                      Tags
+                      {labels.tags[currentLang]}
                     </h2>
                     <div className="flex flex-wrap">
                       {tags.map((tag) => (
@@ -96,7 +137,7 @@ export default function PostLayout({ content, next, prev, children }: LayoutProp
                     {prev && prev.path && (
                       <div>
                         <h2 className="text-xs tracking-wide text-gray-500 uppercase dark:text-gray-400">
-                          Previous Article
+                          {labels.previousArticle[currentLang]}
                         </h2>
                         <div className="text-primary-500 hover:text-primary-600 dark:hover:text-primary-400">
                           <Link href={`/${prev.path}`}>{prev.title}</Link>
@@ -106,7 +147,7 @@ export default function PostLayout({ content, next, prev, children }: LayoutProp
                     {next && next.path && (
                       <div>
                         <h2 className="text-xs tracking-wide text-gray-500 uppercase dark:text-gray-400">
-                          Next Article
+                          {labels.nextArticle[currentLang]}
                         </h2>
                         <div className="text-primary-500 hover:text-primary-600 dark:hover:text-primary-400">
                           <Link href={`/${next.path}`}>{next.title}</Link>
@@ -120,9 +161,9 @@ export default function PostLayout({ content, next, prev, children }: LayoutProp
                 <Link
                   href={`/${basePath}`}
                   className="text-primary-500 hover:text-primary-600 dark:hover:text-primary-400"
-                  aria-label="Back to the blog"
+                  aria-label={labels.backToBlog[currentLang]}
                 >
-                  &larr; Back to the blog
+                  &larr; {labels.backToBlog[currentLang]}
                 </Link>
               </div>
             </footer>

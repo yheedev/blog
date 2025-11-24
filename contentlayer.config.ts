@@ -1,5 +1,6 @@
 import { defineDocumentType, ComputedFields, makeSource } from 'contentlayer2/source-files'
 import { writeFileSync } from 'fs'
+import { execSync } from 'child_process'
 import readingTime from 'reading-time'
 import { slug } from 'github-slugger'
 import path from 'path'
@@ -29,6 +30,58 @@ import prettier from 'prettier'
 
 const root = process.cwd()
 const isProduction = process.env.NODE_ENV === 'production'
+
+// Git 타임스탬프 캐시 (중복 호출 방지)
+const timestampCache = new Map<string, { created: string; modified: string }>()
+
+/**
+ * Git 히스토리에서 파일의 생성일과 수정일을 가져옵니다 (캐시 사용)
+ */
+function getCachedGitTimestamps(filePath: string): { created: string; modified: string } {
+  // 임시로 캐시 비활성화 - 디버깅용
+  return getGitTimestamps(filePath)
+
+  // if (!timestampCache.has(filePath)) {
+  //   timestampCache.set(filePath, getGitTimestamps(filePath))
+  // }
+  // return timestampCache.get(filePath)!
+}
+
+/**
+ * Git 히스토리에서 파일의 생성일과 수정일을 가져옵니다
+ */
+function getGitTimestamps(filePath: string): { created: string; modified: string } {
+  try {
+    // Contentlayer는 'blog/test.mdx'를 전달하지만, Git은 'data/blog/test.mdx'를 원함
+    const gitPath = `data/${filePath}`
+    console.log('🔍 Getting timestamps for:', gitPath)
+
+    // 파일의 첫 커밋 날짜 (생성일) - Windows 호환
+    const createdOutput = execSync(`git log --follow --format=%aI --reverse "${gitPath}"`, {
+      encoding: 'utf-8',
+    })
+    const created = createdOutput.split('\n')[0].trim()
+    console.log('  ✅ Created:', created)
+
+    // 파일의 마지막 커밋 날짜 (수정일)
+    const modified = execSync(`git log -1 --format=%aI "${gitPath}"`, {
+      encoding: 'utf-8',
+    })
+      .toString()
+      .trim()
+    console.log('  ✅ Modified:', modified)
+
+    return {
+      created: created || new Date().toISOString(),
+      modified: modified || new Date().toISOString(),
+    }
+  } catch (error) {
+    // Git 히스토리가 없는 경우 현재 시간 사용
+    console.error(`❌ Git timestamp error for ${filePath}:`, error.message)
+    const now = new Date().toISOString()
+    return { created: now, modified: now }
+  }
+}
 
 // heroicon mini link
 const icon = fromHtmlIsomorphic(
@@ -132,6 +185,22 @@ export const Blog = defineDocumentType(() => ({
     filePath: { type: 'string', resolve: (doc) => doc._raw.sourceFilePath },
     readingTime: { type: 'json', resolve: (doc) => readingTime(doc.body.raw) },
     toc: { type: 'json', resolve: (doc) => extractTocHeadings(doc.body.raw) },
+
+    // Git 히스토리에서 생성일/수정일 자동 추출. getCachedGitTimestamps를 사용하여 문서당 한 번만 Git 명령 실행
+    createdAt: {
+      type: 'date',
+      resolve: (doc) => {
+        const timestamps = getCachedGitTimestamps(doc._raw.sourceFilePath)
+        return timestamps.created
+      },
+    },
+    modifiedAt: {
+      type: 'date',
+      resolve: (doc) => {
+        const timestamps = getCachedGitTimestamps(doc._raw.sourceFilePath)
+        return timestamps.modified
+      },
+    },
 
     structuredData: {
       type: 'json',

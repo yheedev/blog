@@ -8,5 +8,5 @@ export default async function Page({ params }: { params: Promise<{ lang: Lang }>
   const sortedPosts = sortPosts(allBlogs.filter((post) => post.lang === lang && !post.draft))
   const posts = allCoreContent(sortedPosts)
 
-  return <Main posts={posts} lang={lang} />
+  return <Main posts={posts} />
 }

@@ -148,7 +148,6 @@ export const Blog = defineDocumentType(() => ({
   fields: {
     title: { type: 'string', required: true },
     date: { type: 'date', required: true },
-    lang: { type: 'enum', options: [...LANGS], required: true },
     toc: { type: 'boolean', default: true },
     tags: { type: 'list', of: { type: 'string' }, default: [] },
     stacks: {
@@ -174,11 +173,39 @@ export const Blog = defineDocumentType(() => ({
   computedFields: {
     ...computedFields,
 
-    slug: { type: 'string', resolve: (doc) => doc._raw.flattenedPath.replace(/^.+?\//, '') },
+    // 언어는 폴더 경로에서 자동 추출 (blog/ko/xxx.mdx -> 'ko')
+    lang: {
+      type: 'enum',
+      options: [...LANGS],
+      resolve: (doc) => {
+        const pathParts = doc._raw.flattenedPath.split('/')
+        // blog/ko/post-name -> ['blog', 'ko', 'post-name']
+        const lang = pathParts[1] as (typeof LANGS)[number]
+        return LANGS.includes(lang) ? lang : 'ko' // 기본값: 'ko'
+      },
+    },
+
+    // slug는 파일명에서 추출 (blog/ko/nextjs-review.mdx -> 'nextjs-review')
+    slug: {
+      type: 'string',
+      resolve: (doc) => {
+        const pathParts = doc._raw.flattenedPath.split('/')
+        // blog/ko/post-name -> 'post-name'
+        return pathParts.slice(2).join('/')
+      },
+    },
+
+    // path는 언어/blog/slug 형식 (ko/blog/nextjs-review)
     path: {
       type: 'string',
-      resolve: (doc) => `${doc.lang}/blog/${doc._raw.flattenedPath.replace(/^.+?\//, '')}`,
+      resolve: (doc) => {
+        const pathParts = doc._raw.flattenedPath.split('/')
+        const lang = pathParts[1]
+        const slug = pathParts.slice(2).join('/')
+        return `${lang}/blog/${slug}`
+      },
     },
+
     filePath: { type: 'string', resolve: (doc) => doc._raw.sourceFilePath },
     readingTime: { type: 'json', resolve: (doc) => readingTime(doc.body.raw) },
     toc: { type: 'json', resolve: (doc) => extractTocHeadings(doc.body.raw) },
@@ -201,17 +228,22 @@ export const Blog = defineDocumentType(() => ({
 
     structuredData: {
       type: 'json',
-      resolve: (doc) => ({
-        '@context': 'https://schema.org',
-        '@type': 'BlogPosting',
-        headline: doc.title,
-        datePublished: doc.date,
-        dateModified: doc.lastmod || doc.date,
-        description: doc.summary,
-        image: doc.images ? doc.images[0] : siteMetadata.socialBanner,
+      resolve: (doc) => {
+        const pathParts = doc._raw.flattenedPath.split('/')
+        const lang = pathParts[1]
+        const slug = pathParts.slice(2).join('/')
 
-        url: `${siteMetadata.siteUrl}/${doc.lang}/blog/${doc.slug}`,
-      }),
+        return {
+          '@context': 'https://schema.org',
+          '@type': 'BlogPosting',
+          headline: doc.title,
+          datePublished: doc.date,
+          dateModified: doc.lastmod || doc.date,
+          description: doc.summary,
+          image: doc.images ? doc.images[0] : siteMetadata.socialBanner,
+          url: `${siteMetadata.siteUrl}/${lang}/blog/${slug}`,
+        }
+      },
     },
   },
 }))

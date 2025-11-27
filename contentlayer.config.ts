@@ -251,6 +251,7 @@ export const Blog = defineDocumentType(() => ({
 export default makeSource({
   contentDirPath: 'data',
   documentTypes: [Blog],
+  disableImportAliasWarning: true,
   mdx: {
     cwd: process.cwd(),
     remarkPlugins: [
@@ -282,7 +283,11 @@ export default makeSource({
   },
   onSuccess: async (importData) => {
     const { allBlogs } = await importData()
-    createTagCount(allBlogs)
-    createSearchIndex(allBlogs)
+    // _templates 폴더의 파일 제외
+    const filteredBlogs = allBlogs.filter(
+      (blog) => !blog._raw.sourceFilePath.includes('_templates')
+    )
+    createTagCount(filteredBlogs)
+    createSearchIndex(filteredBlogs)
   },
 })

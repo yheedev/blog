@@ -1,0 +1,182 @@
+---
+title: '<article> VS <section>'
+date: '2023. 5. 27.'
+tags: ['html', 'accessibility']
+stacks: ['Publishing']
+topics: ['Projects']
+draft: false
+summary: 'section 버리고 article만 써야한다고요?'
+toc: true
+---
+
+최초 작성: 2023. 5. 27. [notion blog](https://www.notion.so/yheedev/article-VS-section-a39b3002850041dfacc8e43199b745f5)
+
+<hr className="invisible my-3" />
+
+`<div>`를 사용하지 않기 위한 몸부림으로 그간 나의 코드에서 남용되었던 `<article>`, `<section>` 태그... 이 과정에서 번번히 두 태그의 차이를 헷깔리고 자주 검색을 하게 되길래 한 번 정리했다.
+
+최근에 다양한 연차의 프론트엔드 개발자 분들께 물어본 결과 현업에서도 자주 `<div>`를 사용한다는 답변을 들었고, 대기업의 웹페이지를 개발자 도구를 통해 확인해보면 대부분의 태그가 `<div>`로 이뤄진 것을 확인할 수 있었다. 그래서 정 마땅한게 없을 때에 `<div>`를 사용하는 것을 그리 경계할 필요는 없지 않을까 싶었다. 그리고 이 김에 그간 관심 있던 시맨틱 마크업, SEO를 위해 좀 더 깊게 공부해보았다.
+
+<hr className="invisible my-5" />
+
+# 1. HTML Living Standard Says…
+
+HTML Living Standard는 Article or Section 이슈에 대해 아래와 같이 명시했다.
+
+[HTML Standard](https://html.spec.whatwg.org/#article-or-section)
+
+> **4.3.12.1 Article or section?**
+
+> _This section is non-normative._
+
+> A [`section`](https://html.spec.whatwg.org/#the-section-element) forms part of something else. An [`article`](https://html.spec.whatwg.org/#the-article-element) is its own thing. But how does one know which is which? Mostly the real answer is "it depends on author intent".
+
+> For example, one could imagine a book with a "Granny Smith" chapter that just said "These juicy, green apples make a great filling for apple pies."; that would be a [`section`](https://html.spec.whatwg.org/#the-section-element) because there'd be lots of other chapters on (maybe) other kinds of apples.
+
+> On the other hand, one could imagine a tweet or reddit comment or tumblr post or newspaper classified ad that just said "Granny Smith. These juicy, green apples make a great filling for apple pies."; it would then be [`article`](https://html.spec.whatwg.org/#the-article-element)s because that was the whole thing.
+> A comment on an article is not part of the [`article`](https://html.spec.whatwg.org/#the-article-element) on which it is commenting, therefore it is its own [`article`](https://html.spec.whatwg.org/#the-article-element).
+
+아래는 나의 사견을 섞은 해석이다.
+
+<hr className="invisible my-3" />
+
+## `<section>`과 `<article>` 중에서 뭘 써야 하는지 표준적으로 정해진 것은 없습니다!
+
+`<section>`태그는 다른 내용의 일부를 구성합니다. 그리고 `<article>` 태그는 그 내용 자체이고요. 근데 뭐가 내용인지 뭐가 내용의 일부인지는 어떻게 구분하냐고요? 그건 전부 개발자 의도에 달려있는 것임.
+
+예를 들어서 사과에 대한 웹사이트를 제작한다고 가정해봅시다. 개발자는 `<section>` 태그를 이용해서 여러 챕터 중 하나로 '아오리 사과로 사과 파이를 만들어보세요' 이라는 챕터를 만들 수 있습니다. 그거 말고도 아오리 사과, 부사 사과, 홍옥 사과 등에 대한 챕터를 만들어야 할 수도 있고요.
+
+하지만 만약에 SNS의 댓글에서 작성자가 'ㄴㄴ 홍옥 사과로 만든 사과 파이가 최고임' 이라는 SNS 댓글을 작성한다면 그 댓글은 `<article>` 태그로 쓰일 것입니다. 거기선 그 내용이 전부이기 때문입니다. 즉 댓글, 광고 등에서 해당 내용은 `<article>`의 일부가 아닌 자체적인 `<article>` 그 자체니까요.
+
+(근데 댓글이 10개가 되고,, 100개가 되면 또 `<section>`이 되는 것인가?..)
+
+<hr className="invisible my-3" />
+
+## 요약: 하나의 내용만 담으면 `<article>`, 내용 중 일부를 담으면 `<section>`.
+
+뭐가 내용이고 내용의 일부인지 정하는 것은 개발자 의도에 달려있으며 MDN에서 정해진 표준이 없다.
+
+<hr className="invisible my-5" />
+
+# 2. `<section>`과 `<article>`의 특징과 차이점은 무엇인가요?
+
+[Section vs Article HTML5](https://stackoverflow.com/questions/7549561/section-vs-article-html5)
+
+스택오버플로우에서 높은 좋아요를 받은 답변들을 참고했다.
+
+## `<section>`
+
+`<section>` 태그는 연관된 하나의 주제가 묶인 그룹이라고 생각하면 쉽다. `<section>` 태그의 예시로는 챕터, 여러 탭 페이지 중 하나, 논문의 번호가 매겨진 섹션, 홈 페이지의 소개, 뉴스 항목, 연락처 정보 섹션 등이 있다.
+
+`<section>`은 일반적인 컨테이너 요소가 아니다. 단순하게 스타일을 지정하거나 스크립팅의 편의를 위해서 그룹화를 할 때에는 `<section>` 보다 `<div>`를 사용하는 것이 나을 수 있다. 즉, 문서의 개요와 같은 역할을 할 때에만 `<section>`을 사용하는게 적합하다.
+
+```html
+<article>
+    <h1>People</h1>
+    <p>text about people</p>
+    <section>
+        <h1>happy people</h1>
+        <p>text about happy people</p>
+    </section>
+    <section>
+        <h1>sad people</p>
+        <p>text about sad people</p>
+    </section>
+</article>
+```
+
+위 예시 코드에서 `<section>` 태그는 서로 연관 있는 내용을 담고 있으며, 이 속성은 해당 `<section>` 태그 내에서 유지된다. 반대로 `<article>` 태그는 연관 없는 내용들이 큰 질서 없이 담겨도 상관없다.
+
+## `<article>`
+
+`<article>` 태그는 서로 관련 없는 개별적인 문서, 컨텐츠들을 쉽게 묶을 수 있는 그룹이라고 생각하면 쉽다. 그렇기 때문에 `<article>` 태그는 원칙적으로 독립적으로 배포하거나 재사용 할 수 있다.
+
+`<article>` 태그의 예시로 커뮤니티 게시물, 잡지, 신문 기사, 블로그 포스트, 비디오, 이미지, 댓글, 대화형 위젯 등이 있다.
+
+또한 작성하고자 하는 요소에 대한 신디케이션 (컨텐츠를 다른 곳으로 동시에 배포하거나 공유함)의 목적이 분명할 때에는 `<section>` 보다는 `<article>` 요소를 사용하는 것이 좋다.
+
+### 신디케이트하다, 신디케이션하다?
+
+이 말은 영어로 "Syndicate"라는 단어에서 유래한 용어로, 정보나 컨텐츠를 여러 사이트나 플랫폼에 동시에 배포하거나 공유하는 행위를 뜻한다.
+
+예를 들어, 블로그 포스트나 기사를 쓴 후에 이를 여러 인터넷 사이트에 게재하거나, 소셜 미디어 플랫폼을 통해 동시에 여러 사이트에 공유하는 것이 신디케이션의 한 예시가 된다. 이렇게 하면 컨텐츠가 여러 곳에서 동시에 보여지므로 더 많은 사람들에게 컨텐츠를 노출시킬 수 있고, 정보의 확산과 접근성이 증가한다는 장점이 있다.
+
+```html
+<section id="main">
+  <article>
+    <!-- first blog post -->
+  </article>
+  <article>
+    <!-- second blog post  -->
+  </article>
+  <article>
+    <!-- third blog post -->
+  </article>
+</section>
+```
+
+위 `<article>` 예시에서 `<section id="main">`이 블로그 포스트인 `<article>` 태그들이 포함한다. 각 블로그 포스트는 각각 독립적인 정보 단위로 신디케이트하기에 적합하고, 문맥에 관계없이 자체적으로 읽을 때에 의미가 있으므로 `<article>` 태그를 사용해서 나타내는 것이 적합하다.
+
+`<section id="main">`은 `<article>` 태그들을 그룹화하는 용도로 사용되었는데, 이는 웹 페이지의 구조를 보다 의미적으로 표현하기 위한 것이다.
+
+두 개의 예시들에서 볼 수 있듯이 `<article>` 내부에 `<article>`을 중첩하거나, 반대로 `<article>` 내부에 `<section>`을 중첩해서 사용이 가능하며, 때에 따라서 이렇게 사용하는 것이 합리적일 수 있다. `<section>`과 `<article>`은 둘 다 독립적으로 사용할 수 있는 태그이다.
+
+<hr className="invisible my-5" />
+
+# 3. `<section>`을 버리고 `<article>`만 써야 한다고요?
+
+용도에 맞게 골라서 사용하라는 것도 아니고 `<section>`을 버리고 `<article>`만 사용해야 한다는 국내 포스트를 발견했다. 흥미로워서 읽어보며 정리해보았다.
+
+[버리고 HTML5 써야 하는 이유 - Webactually](https://webactually.com/2020/03/03/<section>을-버리고-HTML5-<article>을-써야-하는-이유/)
+
+모든 `<article>` 태그에 담긴 동영상, 글, 사진 등은 등 다양한 형식으로 추출해서 콘텐츠로 제공한다. 이를 통해 독자적인 페이지, 광고, 뉴스 등으로 컨텐츠를 나타낼 수 있다.
+
+예시로, **애플 watchOS5**의 읽기 모드는 글이 많은 웹 페이지를 열 때 자동으로 시작하는데, 이 때 **페이지의 어느 부분이 가장 중요한 부분인지를 표시하기 위해 그 부분을 `<article>` 태그 안에 넣는다.**
+
+이와 다르게 `<section>` 태그는 웹 브라우저가 **HTML5 문서의 목차를 정할 수 있도록, 각각의 제목과 그에 따른 내용을 담기 위한 용도의 컨테이너**로 만들어졌다.
+
+문서에서 목차를 인식하는 알고리즘은 `<h1>` 하나만 사용해도 이 태그가 `<article>`, `<section>` 같은 태그에 얼마나 깊이 감싸져 있는지에 따라 스스로 올바른 깊이의 제목이 되도록 (`<h1>`가 `<h2>` 혹은 `<h3>`으로 변하도록) 조정한다.
+
+[https://codepen.io/nongdam/pen/rNqgOKw](https://codepen.io/nongdam/pen/rNqgOKw)
+
+위 예시 코드에서 `<h1>` 태그를 3번 사용했는데 `<article>` 태그에 감싸져 있는 `<h1>` 태그 크기는 맨 위에 있는 `<h1>` 태그의 크기 보다 작은 것을 확인할 수 있다.
+
+`<section>`과 마찬가지로 `<article>` 또한 구획을 짓기 위한 요소이므로, 앞의 사례에서 `<article>` 안에 들어 있는 `<h1>`은 논리적으로 따지면 자동으로 `<h2>`가 되어야 한다는 것이다. 이는 팀 버너스 리가 1991년에 이미 언급한 개념이다.
+
+> 미국 출판 협회의 문서 표준에서 따온 `<h1>`이나 `<h2>` 같은 것으로 제목을 특정하기보다, 내 생각에는 `<section>` 요소에 각 구획을 포함하고 구획의 제목을 모두 똑같이 `<h>` 태그로 표시해서 그 구획이 얼마나 깊이 들어가 있는지에 따라 제목의 깊이를 정하도록 하는 편이 더 좋겠습니다.
+
+하지만 `<section>`의 이 목차 기능을 구현한 브라우저는 지금까지 존재하지 않는다. 유일하게 IE에서 구현하려는 노력을 했었으나 버그가 너무 많아서 포기했다고 한다. 그러니까 `<section>` 태그는 탄생된 목적을 달성하지 못했으며 개발이 중단된 태그이기 때문에 굳이 사용할 필요가 없다는 것이다.
+
+[https://codepen.io/nongdam/pen/eYPapPR](https://codepen.io/nongdam/pen/eYPapPR)
+
+해당 포스트를 작성한 필자는 위 코드 예시에서 신기한 것을 발견했다고 했다. `<h1>` 태그 4개를 점점 더 깊은 `<section>` 태그로 감쌌더니 크기가 점점 `<h1>, <h2>, <h3>, <h4>..` 와 같이 자동으로 작아지는 것이다. 이는 크로미움 기반 브라우저에서 모두 동일하게 나타난다.
+
+하지만 이는 `<h1>`의 겉모습만 바꾸는 것으로, `<section>`에 한 번 감싸진 `<h1>`이 겉보기엔 `<h2>`과 같은 크기겠지만 개발자 도구에서는 `<h2>` 크기로 줄어든 `<h1>` 태그의 깊이는 `1`으로 등록 되어있다.
+
+이후 Mozillla의 사내 접근성 팀에서 검토 및 실험한 결과 `<section>`으로 감싸서 사용해보니 의도치 않게 `<h1>`의 깊이 수준이 낮아지는 등 외려 단점이 늘었고 `<section>` 기능을 제외하기로 결정했다고 한다. 결국 이전과 같이 `<h1>~<h6>`을 사용해서 제목을 표시해야 하고, `<section>` 태그는 무시하자는 결론이 내려진다.
+
+길고도 길게 `<section>`을 쓰지 말자고 얘기하는 저 포스트에서도 `<section>`을 사용하긴 했다. 아래 예시와 같다.
+
+```jsx
+<section aria-label="간단 요약">요약문 내용</section>
+```
+
+스매싱 매거진 웹사이트를 읽을 때의 경험을 개선하기 위해 마크업 수정을 했는데, 기사 맨 위의 간단 요약 항목과 기사 본문을 나누는 가로선에 대한 것이였다. 그 가로선은 별 기능 없는 장식인데, 어디서 간단 요약이 끝나고 기사 본문이 시작되는지 구분하기 위해 `<section aria-label="간단 요약">` 안에 간단 요약을 넣기로 한 것이다.
+
+대부분의 스크린 리더는 따로 `accessible name`이 부여되지 않은 이상 `<section>` 요소를 언급하지 않는다. 이 경우에는 `aria-label`을 이용해서 `accessible name`을 부여했다. 이렇게 되면 스크린리더는 사용자가 ‘간단 요약’ 영역에 들어간다는 사실을 안내해주고, 다 읽으면 ‘간단 요약’ 영역이 끝났다고 알려준다. 또 스크린 리더 사용자가 원하면 요약 부분을 건너뛰는 것이 가능하다.
+
+간단하게 `<div role=“region” aria-label=“간단 요약”>`를 사용할 수도 있었겠지만, `<section>` 태그를 이용해서 HTML에 내재된 용도 정보를 활용하는 편이 낫다. 언제나 기본 정보를 쓰는 것이 부가 정보를 더하는 것보다 훨씬 낫기도 하다. 또한 마르코 제에는 아래와 같은 말을 남겼다.
+
+> 어떤 영역에 `aria-label`이나 `aria-labelledby`를 써서 이름을 붙이는 경우, 그 영역의 role(용도)은 제대로 된 위젯widget이나 문서 구성landmark으로 설정하는 것이 가장 기본적인 원칙이다.
+
+<hr className="invisible my-5" />
+
+# 4. 결론 요약
+
+- 개별적인 컨텐츠 전체를 담을 때에는 `<article>`을 사용한다. `<article>`을 사용해서 개별적인 여러 컨텐츠를 하나하나 `<article>`에 담아서 하나의 태그로 묶을 수 있음. ex) 블로그 포스트, 동영상, 댓글
+- 컨텐츠의 일부 내용을 담으면 `<section>`을 사용한다. ex) 여러 탭 페이지 중 하나, 논문의 번호가 매겨진 섹션, 홈 페이지 소개
+- 어떤 것이 내용이고 내용의 일부인지 정하는 것은 개발자 의도에 달려있으며 `<section>` 과 `<article>` 사용에 대해 MDN 측의 표준이 없다.
+
+- 하지만 스크린 리더와 애플 watchOS5, 신디케이션 등에서 중요성이 높은 요소라고 인식하는건 `<article>`이기 때문에 때에 따라 `<section>` 사용을 지양하고 `<article>` 사용하는 것이 권장됨.
+- `<section>`은 `<h1>~<h6>` 요소 크기를 자동으로 조절하는 컨테이너 역할을 목적으로 만들어졌는데 개발 중단되서 그 역할을 해내지 못한다. 그래서 필요성에 대한 논쟁이 있으나 `<section aria-label="간단 요약">`과 같이 제 역할 할 수 있는 부분이 있긴 하다.
+- 마크업 할 때에 억지로 `<article>`과 `<section>` 쓰려고 노력하지 말고 그냥 `<div>`를 사용하자.

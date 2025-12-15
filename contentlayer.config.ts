@@ -159,6 +159,7 @@ export const Blog = defineDocumentType(() => ({
       type: 'list',
       of: { type: 'enum', options: [...TOPICS] },
       default: [],
+      required: false,
     },
     lastmod: { type: 'date', required: false },
     draft: { type: 'boolean' },

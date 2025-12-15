@@ -14,6 +14,7 @@ export const STACKS = [
   'Styled-Components',
   'Vercel',
   'AWS',
+  'Publishing',
 ] as const
 
 export const TOPICS = ['Projects', 'OpenSource', 'Lecture', 'Algorithm'] as const

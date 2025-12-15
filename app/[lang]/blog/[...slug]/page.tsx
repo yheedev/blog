@@ -15,7 +15,7 @@ import { components } from '@/components/MDXComponents'
 // 동적 경로 생성
 export async function generateStaticParams() {
   return allBlogs
-    .filter((post) => !post.draft)
+    .filter((post) => !post.draft && post.slug && post.slug.trim().length > 0)
     .map((post) => ({
       lang: post.lang,
       slug: post.slug.split('/'),

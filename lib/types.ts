@@ -15,9 +15,20 @@ export const STACKS = [
   'Vercel',
   'AWS',
   'Publishing',
+  'Git/GitHub',
 ] as const
 
-export const TOPICS = ['Projects', 'OpenSource', 'Lecture', 'Algorithm'] as const
+export const TOPICS = [
+  'My Pokemon Type',
+  'Guttok',
+  'Perkwatch',
+  'OpenSource',
+  'Lecture',
+  'Algorithm',
+  'Debugging',
+  'Infra',
+  'TIL',
+] as const
 
 export const LANG_LABELS: Record<Lang, string> = {
   ko: '한국어',

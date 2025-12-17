@@ -1,0 +1,432 @@
+---
+title: 'Redux Toolkit with TypeScript: 다크모드 토글 기능 구현'
+date: '2024. 5. 6.'
+tags: ['React', 'TypeScript', 'Redux Toolkit']
+topics: ['My Pokemon Type']
+draft: false
+summary: '리덕스 툴킷과 타입스크립트를 사용해서 다크모드 토글 기능을 구현한 과정과 이유를 공유합니다.'
+toc: true
+---
+
+최초작성: 2024. 5. 6. [notion blog](https://www.notion.so/yheedev/Redux-Toolkit-TypeScript-dd57ab97cc384de794800eac0f414f74)
+
+<hr className="invisible my-3" />
+
+# Redux Toolkit, TypeScript: 리덕스 툴킷 세팅하면서 다크모드 토글 기능 구현
+
+나는 [mypkmn.info](https://mypokemontype.vercel.app) 프로젝트에서 리덕스를 통해 다크모드를 비롯한 상태를 전역에서 관리하고 로컬 스토리지에 저장하고 싶었다. 이 글에서는 리덕스를 선정한 이유, 리덕스를 학습하며 세팅을 한 과정, 다크모드 슬라이스를 작성하고 버튼을 만든 내용을 기록했다.
+
+사용 중인 스택은 다음과 같다: React, TypeScript, Redux Toolkit, Redux Persist, Etc(GlobalStyle, React-Router-DOM, Styled-Component…)
+
+<hr className="invisible my-5" />
+
+# 1. 리덕스를 채택한 이유
+
+## 1.1 useState의 한계
+
+- 컴포넌트 내부에서 `useState`를 통해 상태를 선언한 뒤에 여러 자식 컴포넌트에서 해당 상태를 사용하고 변경해야 할 때가 종종 있다. 그렇지만 이러한 자식 컴포넌트가 많아질 수록 state에 대한 종속성이 강해질 수 있다.
+  - 모든 자식 컴포넌트에서 동일한 상태를 유지하기 어려울 수 있음. 이런 과정에서 코드가 복잡해지고 디버깅이 어려워질 수 있다는 단점이 있다.
+  - 자식 컴포넌트가 중첩될 수록 props drilling 이슈가 발생할 수 있다.
+  - `useState`는 상태 변경이 로직이 컴포넌트 내부에 머물기 때문에 여러 컴포넌트에 분산해서 작성해야 하는 한계가 존재한다.
+  - `useState`는 컴포넌트 자체에서 관리하는 state 변경 시 해당 state가 포함된 함수 컴포넌트 전체가 리렌더링 된다는 단점이 있다.
+
+## 1.2 리덕스의 장점
+
+- `useState`에 반해 리덕스는 특정 state를 구독하고 있는 컴포넌트에서 state의 변경이 일어났을 경우에만 리렌더링이 이뤄진다. 상대적으로 필요 이상의 리렌더링을 방지해서 성능 향상을 이끌어낼 수 있다는 장점이 있다.
+  - 내가 mypkmn.info에서 개발한 다국어 지원 기능을 예시로 들어보자면, 만약 내가 `useState`를 사용해서 한/영/일 번역 기능을 구현했다면 텍스트 컴포넌트를 포함하고 있는 컴포넌트 전체가 통째로 리렌더링 되었을 것이다.
+    하지만 나는 리덕스 툴킷에서 `languageSlice`를 통해 각각의 텍스트 컴포넌트에서 `useSelector`를 통해 해당 state를 구독하도록 코드를 작성해두었다. 그렇기 때문에 내가 한국어를 선택한 상태에서 영어로 지원 언어를 바꿀 경우, 텍스트 컴포넌트들에서만 리렌더링이 이뤄질 수 있을 것이다.
+- 리덕스는 `useState`처럼 컴포넌트에 종속되지 않고, 루트 레벨에 위치한 스토어 한 곳에서만 전체적인(글로벌한) 상태 관리를 한다.
+  - 그래서 모든 컴포넌트들은 store에 저장된 기능들을 구독하면서 그 state와 state를 다루는 함수를 전달받는다. 그래서 리덕스는 특정 state가 바뀌면 그 state를 바라보는 컴포넌트들이 모두 리렌더링될 수 있게 도와준다. 이 덕분에 같은 상태를 구독하고 있는 컴포넌트들이 모두 통일적인 상태를 유지할 수 있다.
+- 리덕스를 사용하면 Props drilling 문제도 어느 정도 해결이 되는데, 리덕스의 store는 프로젝트 루트 레벨에 위치해있고, 해당 store에 저장된 기능을 구독하는 컴포넌트는 모두 props drilling이 이뤄질 필요 없이 어느 위치에 있든 상관 없이 `useSelector` 를 사용해서 단 한번에 상태를 받을 수 있다.
+  - 프로젝트를 끝낸 지금, 가장 깊은 레벨에 위치해있고 또 재활용이 많이 이뤄지는 컴포넌트에서는 불가피하게 props drilling이 빈번하게 이뤄진다는 것을 느꼈다. 리덕스가 이 문제를 해결할 수 있는 만능의 도구라고 보긴 어려운 것 같다.
+
+## 1.3. 간단하게 보는 리덕스 패턴
+
+리덕스는 Flux 패턴을 바탕으로 단방향으로 흘러간다.
+
+1. `view` (컴포넌트)에서 상태 업데이트가 이뤄진다
+   - 유저가 라이트 테마인 상태에서 다크모드 토글 클릭
+2. `dispatch` 가 `action`을 발동시킨다
+   - 다크모드 컴포넌트에서 `dispatch(darkModeSlice.actions.setTheme(newTheme));`를 호출
+3. 다크모드 관련 `reducer`에 정의된 로직에 따라 store의 state를 업데이트함.
+   - store에 등록해둔 `darkModeSlice` 리듀서의 상태가 변한다.
+   - 지금 라이트 테마인 상태라면 `dispatch(darkModeSlice.actions.setTheme('dark'));` 동작
+4. 다크모드 관련 `state`를 구독하고 있는 `view`(컴포넌트)가 변한다.
+   - `const isDarkMode = useSelector((state: *RootState*) => state.darkMode.theme === 'dark');` 와 같이 `useSelector`를 사용해서 다크모드 관련 상태를 구독중인 각종 컴포넌트들(버튼, 셀렉터, 텍스트 등)은 변경된 darkMode.theme 상태를 가져와 반영하며 리렌더링이 이뤄진다.
+
+## 1.4. 리덕스에서 리덕스 툴킷으로 변경한 이유
+
+리덕스와 리덕스 툴킷은 FLUX 패턴으로 데이터 처리를 하고 글로벌하게 상태 관리하는 것도 다 똑같다. 리덕스 툴킷은 리덕스 리덕스 공식에서 직접 기존의 리덕스를 어떻게 사용하면 좋을지 사용 방향을 직접 권장해주면서 자유도와 난이도를 낮춰서 제시해주는 모델에 가깝다는 생각이 든다.
+
+여튼 리덕스를 쓰다가 변경한 이유는 아래와 같다.
+
+1. 아래의 이유들도 중요하지만 뭣보다 리덕스를 사용하다가 직렬화 이슈가 지속적으로 발생해서 미들웨어를 사용해야했는데 그게 어려웠었음... 이 직렬화 이슈에 대한 내용은 조금 길어질 것 같아서 다른 포스트에서 더 자세하게 다루고 싶다
+2. 리덕스에서 미들웨어를 사용하기 위해서는 추가적으로 사용 방법을 공부해야하는데 리덕스 툴킷은 이런 부분에 대한 러닝 커브가 낮은 편이다.
+3. 초기 설정이 리덕스 보다 간편함. 왜냐하면 `createSlice` 를 사용하면 리듀서와 액션 크리에이터를 한 번에 생성할 수 있기 때문이다
+4. 리덕스 툴킷은 `createSlice`, `configureStore` 등의 유틸리티를 제공하는데 여기에 미들웨어, devtool, thunk 같은 라이브러리가 모두 내장되어있기 때문에 별도로 설치할 필요가 없다. 리덕스에서도 사용할 수 있는 라이브러리지만 전부 추가로 설치하고 세팅해야한다.
+5. 리덕스 툴킷은 반복되는 코드가 기존의 리덕스보다는 적은 편이다.
+6. 리덕스 툴킷에서는 불변성을 신경쓰지 않아도 된다. 리덕스 툴킷은 내부적으로 `immer` 라이브러리를 사용해서 불변성을 자동으로 관리한다. 따라서, 리듀서에서 상태를 직접 변경하는 것처럼 코드를 작성해도 실제로는 불변성이 유지된다.
+   - **불변성을 지켜야하는 이유**
+     - 리액트는 이전 state와 바뀐 state를 구분하기 위해 현재 state의 참조값이 바뀌었는지 확인한다. 왜냐하면 state의 타입이 객체이기 때문이다. 참조값이 바뀌면 state가 변경되었다고 인식하고, 해당 상태를 사용하는 컴포넌트에게 리렌더링을 요청한다.
+
+     ```tsx
+     1. state.test = action.test  // 이렇게 변경하면 참조 값 안 변함. 상태 변경 인식 못하고 리렌더링 이뤄지지 않음.
+     2. state.test = {...test, action.test} // 이렇게 변경해야 상태 변경을 인식하고 리렌더링이 이뤄진다.
+     ```
+
+     - 하지만 리덕스 툴킷은 내부적으로 `immer` 라이브러리를 사용하여 불변성을 자동으로 관리한다. 그래서 리덕스 툴킷으로 작성한 리듀서에서 첫 번째 줄처럼 상태를 직접 변경하는 코드 (ex: `state.test = action.payload;`)를 작성해도 실제로는 불변성이 유지될 수 있다.
+
+# 2. 리덕스 툴킷 세팅 과정
+
+## 2.1. store.tsx 작성 (configureStore, persistStore, middleware, serializableCheck, AppDispatch...)
+
+```tsx
+// store.tsx
+
+import { configureStore } from '@reduxjs/toolkit'
+import { persistStore } from 'redux-persist'
+import { rootReducer, persistedReducer } from './reducer' // 2️⃣
+
+export const store = configureStore({
+  // 1️⃣
+  reducer: persistedReducer,
+  middleware: (
+    getDefaultMiddleware // 3️⃣
+  ) =>
+    getDefaultMiddleware({
+      serializableCheck: {
+        // 4️⃣
+        ignoredActions: ['persist/PERSIST', 'persist/REHYDRATE'],
+        ignoredPaths: ['payload.err', 'err'],
+      },
+    }),
+})
+
+export type RootState = ReturnType<typeof rootReducer>
+export type AppDispatch = typeof store.dispatch //5️⃣
+export const persistor = persistStore(store) // 6️⃣
+```
+
+1. `configureStore`: `@reduxjs/toolkit`에서 제공하는 Redux 스토어를 import해서 사용할 수 있다.
+
+- **`configureStore`과 `createStore`의 특징**
+- `configureStore`: 리덕스 툴킷이 공식적으로 권장하며 스토어를 설정할 때 필요한 기본 설정(ex: devtool, thunk..)을 자동으로 제공한다. 타입스크립트와 호환성이 뛰어나고, 스토어 설정을 좀 더 간단하게 할 수 있다는 장점이 있다.
+- `createStore`: 기본 설정을 제공하지 않기 때문에, 모든걸 직접 설정해야 한다. 미들웨어 설정도 직접 해야한다. 타입스크립트와의 호환성이 떨어진다고 알려져있다.
+
+1. `import { rootReducer, persistedReducer } from './reducer';`store 설정을 위해 reducer.tsx에서 이 둘을 각각 import해온다. 서로 다른 역할을 하는 리듀서임..
+   - **`rootReducer`: 여러 슬라이스 리듀서를 하나의 루트 리듀서로 결합한 것**. 이 루트 리듀서는 Redux 스토어에서 상태를 관리한다.
+   - `persistedReducer`: `persistedReducer`은 `persistConfig`와 함께 `rootReducer`를 감싸서 상태를 로컬 스토리지에 저장할 수 있도록 설정된 리듀서임.
+2. `getDefaultMiddleware`: Redux Toolkit에서 제공하는 기본 미들웨어를 설정하는 함수이다.
+   - `serializableCheck` 속성을 사용해서 `'payload.err', 'err'` 경로에서 로컬 스토리지에 상태를 저장하고 복원할 때(`['persist/PERSIST', 'persist/REHYDRATE'],`) 직렬화 검사에서 무시하도록 설정했다. 이렇게 직렬화 검사에서 특정 경로에서 특정 액션을 무시하도록 설정한 이유는, 직렬화 가능 여부를 검사할 때 오류를 발생시켰기 때문이다.
+3. `export type AppDispatch = typeof store.dispatch;`: 타입스크립트를 사용하고 있기 때문에 Redux 액션을 디스패치할 때 타입 안전성을 보장하기 위해 AppDispatch 타입을 선언했다. 이를 통해 타입스크립트가 dispatch 함수의 사용을 올바르게 검사할 수 있다.
+   - 자바스크립트를 썼다면 타입 정의를 할 필요가 없었을 것이다. 그냥 `const dispatch = useDispatch();` 만 사용해도 되었을 것임.
+4. `export const persistor = persistStore(store);`: `persistStore` 함수를 호출하여 `persistor` 객체 생성한다. 이 객체는 redux persist가 상태를 로컬 스토리지에 저장하고 복원하는 데 사용된다.
+
+## 2.2. reducer.tsx 작성 (redux-persist, CombineReducers, RootState..)
+
+```tsx
+// reducer.tsx
+import { combineReducers } from 'redux';
+import storage from 'redux-persist/lib/storage';
+import { persistReducer } from 'redux-persist';
+import { darkModeSlice, darkModeState } from '../features/darkModeSlice';
+import { PersistPartial } from 'redux-persist/es/persistReducer';
+
+export type RootState = { { // 1️⃣
+  darkMode: darkModeState;
+} & PersistPartial;
+
+export const persistConfig = {  // 2️⃣
+  key: 'root',
+  storage,
+};
+
+export const rootReducer = combineReducers(  // 3️⃣
+  darkMode: darkModeSlice.reducer,
+});
+
+export const persistedReducer = persistReducer(persistConfig, rootReducer);  // 4️⃣
+export default persistedReducer; //
+
+```
+
+1. `export type RootState = { { ... } & PersistPartial`: `RootState`는 Redux 스토어의 상태 타입을 정의해서 타입의 안정성을 보장한다. 이것도 마찬가지로 타입스크립트를 사용하고 있기 때문에 타입 정의를 위해 사용하는 것이며 자바스크립트를 사용했다면 사용할 필요가 없는 것임,,
+   저장된 각 슬라이스의 상태 타입을 포함하고 있으며, `PersistPartial`을 통해 `redux-persist`가 추가하는 부분적인 상태를 나타낸다. - 위 코드의 `darkMode: darkModeState`에서는 `darkModeSlice`의 `export type darkModeState = { theme: 'dark' | 'light' };` 를 저장하고 있는 것이다. - `& PersistPartial;`을 사용해서 RootState에 포함되는 상태들을 모두 `redux-persist`에서 저장한다.
+2. `persistConfig`: `redux-persist` 설정을 정의한다. 여기서는 `key`와 `storage`를 설정하여 상태를 로컬 스토리지에 저장할 수 있도록 했다.
+
+3. `rootReducer = combineReducers({...})` : `{..}` 사이에 작성한 여러 개의 슬라이스 리듀서를 하나의 rootReducer로 결합한다. 그리고 rootReducer를 Redux 스토어에서 관리할 수 있다.
+
+4. `persistedReducer = persistReducer(persistConfig, rootReducer);`: 여러 슬라이스가 하나로 결합된 `rootReducer`를 `persistConfig`와 함께 `persistReducer`로 감싸서 모든 슬라이스의 상태를 로컬 스토리지에 지속적으로 저장할 수 있도록 한다.
+   즉,, 모든 슬라이스 리듀서를 combineReducers로 결합 -> rootReducer로 다시 결합 -> 그 다음에 로컬 스토리지에 저장하기 위해 다시 persistReducer로 결합..한 것임,, 이게 redux-persist의 표준적인 사용 방식이라고 한다 - `persistConfig`와 함께 rootReducer을 감싸는 이유: 상태가 올바르게 직렬화/역직렬화 되기 위함임
+
+## 2.3. darkModeSlice reducer 작성하기 (createSlice, PayloadAction ...)
+
+```tsx
+// darkModeSlice.tsx
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState } from 'stores/store';
+
+export type darkModeState = {   // 1️⃣
+  theme: 'dark' | 'light';
+};
+
+const initialState: darkModeState = {  // 2️⃣
+  theme: 'light',
+};
+
+export const darkModeSlice = createSlice({ { //3️⃣
+  name: 'darkMode',
+  initialState: initialState,
+  reducers: {
+    setTheme: (state, action: PayloadAction<'dark' | 'light'>) => {
+      state.theme = action.payload as darkModeState['theme'];
+      localStorage.setItem('userTheme', state.theme);
+    },
+  },
+});
+
+export function useToggleTheme() { // 4️⃣
+  const dispatch = useDispatch();
+  const darkMode = useSelector((state: RootState) => state.darkMode.theme); //
+
+  const toggle = () => {
+    if (darkMode === 'dark') {
+      dispatch(darkModeSlice.actions.setTheme('light'));
+    } else {
+      dispatch(darkModeSlice.actions.setTheme('dark'));
+    }
+  };
+
+  return [toggle];
+}
+
+//생략
+
+export const { setTheme } = darkModeSlice.actions; // 4️⃣
+export const darkModeReducer = darkModeSlice.reducer; // 5️⃣
+```
+
+1, 2: darkMode의 기본 상태 `'dark' | 'light'`를 설정합니다. 최초 접속시, 그리고 유저의 디바이스가 선호하는 테마가 따로 선택되어있지 않을 경우에는 기본적으로 라이트 테마를 설정한다.
+
+- `darkModeState`와 `initialState`를 별도로 선언해야하는 이유
+  - `darkModeState`는 `RootState`에 포함되어서 전체 스토어의 상태 구조를 정의할 때 사용됨
+  - 다크모드의 초기 상태를 정의해야함, 가독성, 유지보수성,,,
+  - 이 또한 타입스크립트를 사용하기 때문에 타입 안정성을 보장하기 위함임
+  - darkModeState 내부에서 `initialState: { theme: 'light' } as darkModeState,` 라고 선언해도 됨 난 걍 길어지더라도 눈에 잘 들어오는게 좋아서 위 코드처럼 작성했다.
+
+1. `createSlice`: 다크모드 외에 다국어 지원 등 스토어에 저장할 모든 슬라이스들은 `createSlice`를 사용해서 생성한다. 그리고 reducer에 포함해야하므로 export해야함
+   - Slice 내부에서 name, initialState, reducers 세 가지 속성을 필수로 작성해야함.
+     - name: 다른 슬라이스의 액션의 name과 중복되면 안됨
+     - initialState: 슬라이스 외부에서 선언했으면 `initialState,`만 작성해도 됨. 물론 darkModeState 내부에서 `initialState: { theme: 'light' } as darkModeState,` 라고 선언해도 됨 난 걍 길어지더라도 눈에 잘 들어오는게 좋아서 위 코드처럼 작성했다.
+     - reducers: 해당 슬라이스에 정의된 액션이 발생했을 때 상태가 어떻게 변화할지 정의한다. 필요하면 여러 개의 리듀서들을 작성할 수 있다.
+       - 위 코드의 `setTheme`은 다크모드 슬라이스의 상태를 업데이트한다.
+       - 예를 들어, 사용자가 다크모드 토글 버튼을 클릭하면 `action: PayloadAction<'dark' | 'light'>` 타입의 액션을 받아서 `theme: 'dark' | 'light';` 상태를 업데이트 한 뒤에 그 업데이트한 값을 새롭게 로컬스토리지에 저장한다.
+
+1. `useToggleTheme`: 다크모드 버튼의 토글 역할을 한다.
+   기존엔 커스텀 훅으로 작성했던 파일인데 다크모드 기능을 수행하기 때문에 이 파일에 넣었다. - `useDispatch`:스토어에 액션 디스패치 가능 - `useSelector`: 스토어의 상태를 선택하고 props를 사용하지 않고 바로 가져올 수 있음.
+
+1. `export const { setTheme } = darkModeSlice.actions;`: setTheme 액션 크리에이터를 다크모드 토글 버튼에서 사용할 수 있도록 export함.
+
+1. `export const darkModeReducer = darkModeSlice.reducer;`: `combineReducers`에 추가할 수 있도록 export함.
+
+### 모든 훅을 스토어에 저장하면 안됨
+
+맨 처음에는 다크모드가 토글되는 `useToggleTheme`을 reducers에 작성하거나 스토어에 저장해야하는게 아닌가 싶었었다. 근데 리듀서는 상태를 변경하는 함수이고 훅은 리액트 컴포넌트의 라이프사이클과 관련된 로직을 처리하는 것이기 때문에 올바르다고 한다,,
+
+오히려 자잘한 훅들은 스토어에 슬라이스로 저장하면 성능 오버헤드 이슈가 발생할 수 있다고 한다. 저장된 많은 훅 인스턴스의 직렬화나 역직렬화가 필요하기 때문이다.
+
+그리고 리덕스는 여러 컴포넌트에서 공유하는 전역 상태와 데이터를 관리하는 데에 적합하다. 다크모드 버튼에 필요한 모든 함수나 훅을 store에 넣는건 불필요한 복잡성이 야기될 수 있음. (그냥 슬라이스나 훅 하나를 제대로 작성,,하는게 좋았겠다는 생각이 들기도 하는군아)
+
+찾아보니 대규모 프로젝트에서는 훅을 스토어에서 저장한다고 한다. 그런데 소규모 프로젝트에서 훅을 스토어에 저장하면 오히려 복잡해질 수 있어서 비추천 한다고 함,,
+
+## 2.4. 애플리케이션과 스토어 연결하기 (App.tsx, index.tsx)
+
+```tsx
+// src/index.tsx
+import { createRoot } from 'react-dom/client'
+import App from './App'
+import { Provider } from 'react-redux'
+import React from 'react'
+import { BrowserRouter } from 'react-router-dom'
+import { persistor } from './stores/store'
+import { PersistGate } from 'redux-persist/integration/react'
+import { store } from 'stores/store'
+
+const container = document.getElementById('root') as HTMLElement
+const root = createRoot(container)
+
+function Root() {
+  return (
+    <React.StrictMode>
+           {' '}
+      <Provider store={store}>
+        {' '}
+        // 1️⃣        {' '}
+        <BrowserRouter>
+                   {' '}
+          <PersistGate persistor={persistor}>
+            {' '}
+            // 2️⃣             <App />         {' '}
+          </PersistGate>
+                 {' '}
+        </BrowserRouter>
+             {' '}
+      </Provider>
+         {' '}
+    </React.StrictMode>
+  )
+}
+root.render(<Root />)
+```
+
+1. `<Provider>`은 Redux 스토어를 React 애플리케이션에 주입하는 역할을 한다. 이를 통해 애플리케이션 내의 모든 컴포넌트, 즉 `<Provider>` 하위에 있는 모든 컴포넌트가 Redux 스토어에 접근할 수 있게 된다. 이 때문에 `<Provider>`는 `<React.StrictMode>`를 제외한 가장 상위에서 사용해서 모든 요소들을 감싸줘야하는데, 이 때 단 1개의 요소만 감쌀 수 있다.
+   - 이 많은 라이브러리를 쓰면서 꼭 이 순서로 작성해줘야 렌더링이 가능했다,, 그리고 `<GlobalStyle />`은 여기에 등장하면 안됨
+
+1. `<PersistGate persistor={persistor}>`: redux-persist를 사용하여 Redux 스토어의 상태를 지속적으로 저장하고 복원한다.
+   - persisrot: redux-persist의 persistor 객체로 필수적으로 사용해야한다.
+
+```tsx
+// App.tsx
+
+import { GlobalStyle } from './styles/GlobalStyle'
+import RootRoute from './pages/RootRoute'
+
+export function App() {
+  //생략
+
+  return (
+    <>
+            <GlobalStyle />
+            <RootRoute />   {' '}
+    </>
+  )
+}
+
+export default App
+```
+
+다른건 아니고 GlobalStyle 어디에 넣어야 하는지 너무 헤맸었어서,, 걍 기록해둔다
+App 컴포넌트 리턴 내부에 GlobalStyle, RootRoute을 나란히 둬야 한다,,
+
+## 2.5. 다크모드 버튼 컴포넌트에 darkModeSlice 상태 가져오기
+
+```tsx
+// DarkModeBtn.tsx
+
+import styled, { css } from 'styled-components'
+import { useDispatch, useSelector } from 'react-redux'
+import { RootState } from 'stores/store'
+import { darkModeSlice, useToggleTheme } from 'features/darkModeSlice'
+import { ReactComponent as Sun } from 'img/Sun.svg'
+import { ReactComponent as ToggleOff } from 'img/ToggleOff.svg'
+import { ReactComponent as Moon } from 'img/Moon.svg'
+import { ReactComponent as ToggleOn } from 'img/ToggleOn.svg'
+
+export const DarkModeBtn = () => {
+  const dispatch = useDispatch()
+  const toggle = useToggleTheme()[0] // 1️⃣
+  const theme = useSelector((state: RootState) => state.darkMode.theme) //  2️⃣
+
+  const handleClick = () => {
+    // 3️⃣
+    toggle()
+    const newTheme = theme === 'dark' ? 'light' : 'dark'
+    dispatch(darkModeSlice.actions.setTheme(newTheme)) // 4️⃣
+  }
+
+  return (
+    <Btn aria-label="클릭하면 다크 모드 혹은 라이트 모드로 변경됩니다.">
+      <BtnContainer onClick={handleClick}>
+        {theme === 'dark' ? (
+          <>
+            <ToggleOffIcon className="Toggle ToggleOff shadow-bl"></ToggleOffIcon>
+            <SunIcon className="ToggleIcon shadow-bl" />
+          </>
+        ) : (
+          <>
+            <ToggleOnIcon className="shadow-bl Toggle ToggleOff"></ToggleOnIcon>
+            <MoonIcon className="ToggleIcon shadow-gr" />
+          </>
+        )}
+      </BtnContainer>
+    </Btn>
+  )
+}
+// 스타일 생략
+
+export default DarkModeBtn
+```
+
+1. `const toggle = useToggleTheme()[0];`: darkModeSlice에 작성한 다크모드 토글하는 커스텀 훅이 반환하는 배열의 첫 번째 요소로 useToggleTheme 내부에 있는 toggle 함수를 가져온다.
+   - toggle 함수는 현재 테마 상태를 확인하고 다크 모드와 라이트 모드 사이를 전환할 수 있다.
+
+1. useSelector 사용해서 스토어의 상태를 선택해서 가져올 수 있음. 이 상태가 변경될 때마다 해당 상태를 구독하고 있는 모든 컴포넌트들이 다시 렌더링된다.
+
+1. 토글 버튼 클릭하면 handleClick 함수가 이벤트로 동작함. 다크모드와 라이트 모드를 전환하는 함수가 동작하고, 확인된(바뀐) 현재 테마 값을 dispatch 함수를 사용해서 setTheme 액션을 디스패치 한다. 그리고 해당 테마 값이 리덕스 스토어에 저장이 된다.
+
+## useSelector를 초반에 사용할 때 자주 발생했던 에러: `Reducer<{ RootRoute: Element; }, Action<string>, Partial<{ RootRoute: unknown; }>>' 형식에 'darkMode' 속성이 없습니다.ts(2339)_`)
+
+useThemeEffect를 예전에는 별도의 hook 파일에 작성을 했었는데,, 그러니까 진짜 리덕스 학습 초반이였었는데 그 때 이 에러를 자주 마주쳤었다.
+
+```tsx
+import { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import RootState from '../modules/reducers/reducer';
+import { darkModeSlice } from '../features/darkModeSlice';
+
+export function useThemeEffect() {
+  const dispatch = useDispatch();
+  const theme = useSelector((state: typeof RootState) => state.darkModeSlice.theme); // 에러 발생
+```
+
+> `> _'Reducer<{ RootRoute: Element; }, Action<string>, Partial<{ RootRoute: unknown; }>>' 형식에 'darkMode' 속성이 없습니다.ts(2339)_`
+
+검색 결과 해당 에러는 `useSelector` 훅의 타입 유형 추론과 관련이 있는데, useSelector에는 리덕스 store의 state 타입을 나타내는 generic 매개변수가 필요하기 때문이라고.
+결론적으로는 `typeof RootState`로 수정하지 말아야 했었다! 그냥 `RootState`만 사용해야했다.
+
+그리고 에러가 발생한 부분의 `state.darkModeSlice.theme` 에 있는 `darkModeSlice`도 잘못 작성한거였다. 난 여기에 슬라이스를 작성해야 한다고 어딘가에서 봤다. 다른 글들도 그렇게 작성한걸 많이 봤었고,, 근데 그건 그 사람이 작명을(ㅋㅋㅠ) 그렇게 했던거고 여기에는 슬라이스 자체가 들어가면 안됨,,,
+
+내가 darkModeSlice라고 작성했던 자리에는 내가 reduce.tsx의 RootState에서 `darkMode: darkModeState;`와 같이 작성했던 값에서 속성에 해당하는 **`darkMode`**만 작성해줘야 했던 것이다.
+
+```tsx
+import { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState } from '../modules/Store'; // 1️⃣
+import { darkModeSlice } from '../features/darkModeSlice';
+
+export function useThemeEffect() {
+  const dispatch = useDispatch();
+  const theme = useSelector((state: RootState) => state.darkMode.theme); //
+```
+
+`useSelector`를 사용하는 부분을 다음과 같이 수정해줬다.
+
+state의 타입을 RootState로만 지정하고, darkMode 경로도 정확하게 입력함,,,
+
+이런데도 darkMode 쪽에서 에러가 발생하면 rootReducer에 `darkMode: darkModeReducer,` 가 없거나 잘못 작성되어있을 가능성이 높다. 내 경우에는 rootReducer에서 이 부분을 작성해주고 나니까 `useSelector` 부분에서 `darkMode`를 식별할 수 있었고 에러가 더이상 발생하지 않았다.
+
+너무 너무 너무너무너무 어려웠던 리덕스.. 타입스크립트랑 함께해서 더 어려웠던 리덕스 툴킷
+
+하지만 보람이 아주 굿입니다
+
+### 참고
+
+[https://stackoverflow.com/questions/57472105/react-redux-useselector-typescript-type-for-state](https://stackoverflow.com/questions/57472105/react-redux-useselector-typescript-type-for-state)
+
+[https://redux.js.org/usage/usage-with-typescript](https://redux.js.org/usage/usage-with-typescript)
+
+[https://velog.io/@velopert/velog-dark-mode](https://velog.io/@velopert/velog-dark-mode)
+
+[https://fe-developers.kakaoent.com/2021/211012-typescript-tip/](https://fe-developers.kakaoent.com/2021/211012-typescript-tip/)
+
+[https://stackoverflow.com/questions/65606288/typescript-reduxjs-toolkit-reducer-generated-by-createslice-is-not-assignable](https://stackoverflow.com/questions/65606288/typescript-reduxjs-toolkit-reducer-generated-by-createslice-is-not-assignable)
+
+[https://velog.io/@gsh723/상태관리-Redux-Toolkit-이란](https://velog.io/@gsh723/%EC%83%81%ED%83%9C%EA%B4%80%EB%A6%AC-Redux-Toolkit-%EC%9D%B4%EB%9E%80)
+
+[https://kyounghwan01.github.io/React/redux/redux-basic/#reducer-정의](https://kyounghwan01.github.io/React/redux/redux-basic/#reducer-%EC%A0%95%EC%9D%98)
+
+[https://codekyz.tistory.com/75](https://codekyz.tistory.com/75)
+
+[https://gist.github.com/qkreltms/6b1b9a38eec677a07bad4557a9b9876d](https://gist.github.com/qkreltms/6b1b9a38eec677a07bad4557a9b9876d)

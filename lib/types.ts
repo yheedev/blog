@@ -2,22 +2,6 @@ export const LANGS = ['ko', 'en', 'ja'] as const
 export type Lang = (typeof LANGS)[number]
 export const DEFAULT_LANG: Lang = 'ko'
 
-export const STACKS = [
-  'JavaScript',
-  'TypeScript',
-  'React',
-  'Next.js',
-  'Redux',
-  'Zustand',
-  'TanStack Query',
-  'Tailwind',
-  'Styled-Components',
-  'Vercel',
-  'AWS',
-  'Publishing',
-  'Git/GitHub',
-] as const
-
 export const TOPICS = [
   'My Pokemon Type',
   'Guttok',
@@ -28,6 +12,35 @@ export const TOPICS = [
   'Debugging',
   'Infra',
   'TIL',
+] as const
+
+export const TAGS = [
+  // 기술 스택
+  'JavaScript',
+  'TypeScript',
+  'React',
+  'Next.js',
+  'Redux',
+  'Redux Toolkit',
+  'Zustand',
+  'TanStack Query',
+  'Tailwind',
+  'Styled-Components',
+  'Vercel',
+  'AWS',
+  'Git/GitHub',
+
+  // 프론트엔드
+  'html',
+  'css',
+  'accessibility',
+
+  // 주제/키워드
+  'guide',
+  'tutorial',
+  'debugging',
+  'performance',
+  'refactoring',
 ] as const
 
 export const LANG_LABELS: Record<Lang, string> = {

@@ -5,7 +5,7 @@ import readingTime from 'reading-time'
 import { slug } from 'github-slugger'
 import path from 'path'
 import { fromHtmlIsomorphic } from 'hast-util-from-html-isomorphic'
-import { LANGS, STACKS, TOPICS } from './lib/types'
+import { LANGS, TOPICS } from './lib/types'
 // Remark packages
 import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
@@ -150,11 +150,6 @@ export const Blog = defineDocumentType(() => ({
     date: { type: 'date', required: true },
     toc: { type: 'boolean', default: true },
     tags: { type: 'list', of: { type: 'string' }, default: [] },
-    stacks: {
-      type: 'list',
-      of: { type: 'enum', options: [...STACKS] },
-      default: [],
-    },
     topics: {
       type: 'list',
       of: { type: 'enum', options: [...TOPICS] },

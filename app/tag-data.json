@@ -6,6 +6,7 @@
   "guide": 5,
   "next-js": 5,
   "tailwind": 3,
+  "hello": 2,
   "holiday": 1,
   "canada": 1,
   "images": 1,
@@ -13,8 +14,7 @@
   "writings": 1,
   "book": 1,
   "reflection": 1,
+  "multi-author": 1,
   "html": 1,
-  "accessibility": 1,
-  "hello": 1,
-  "multi-author": 1
+  "accessibility": 1
 }

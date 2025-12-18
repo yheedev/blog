@@ -1,0 +1,171 @@
+---
+title: '배포 1주년! 배포 환경 유지하며 마이그레이션 진행 및 Next.js 설치'
+date: '2025-07-10'
+tags: ['React', 'Next.js', 'TypeScript']
+topics: ['My Pokemon Type']
+draft: false
+summary: '마이그레이션 진행하는 이유, 배포 환경을 유지하는 브랜치 전략'
+toc: true
+---
+
+최초 작성: 2025. 7. 10. notion blog[https://www.notion.so/yheedev/1-Next-js-22cc7639cb49808882a6fc4a4f1815dd]
+
+기존 react, typescript, redux toolkit, redux-persist, aws amplify를 사용해서 개발했던 mypkmn 프로젝트를 react, next.js 15, zustand, zustand persist, vercel을 사용해서 마이그레이션 하려고 한다.
+
+# 마이그레이션 진행하는 이유
+
+1. SEO가 처참해서 포켓몬 타입 계산기, My Pokemon Type 등을 검색해도 구글 검색창에 아예 노출이 되지 않음. . . 구똑 프로젝트에서 Next.js를 사용해서 프로젝트 이름을 검색하면 바로 구글 최상위에 노출되었던 경험이 있었기 때문에 Next.js를 사용해서 SEO를 개선해보고 싶었다.
+2. 초반 로딩에 있어서 스타일이 느리게 적용되는 문제가 발생했음. 이를 개선하기 위해 Styled-components 보다는 tailwind css를 사용해서 변경해보고 싶었다.
+3. 배포 페이지에서는 문제 없이 동작했지만, 작성하고 1년이 지나니 대부분의 리덕스 slice 파일들에서 ''values' 속성이 'ObjectConstructor' 형식에 없습니다. 대상 라이브러리를 변경해야 하는 경우 'lib' 컴파일러 옵션을 'es2017' 이상으로 변경해 보세요.ts(2550)' 같은 에러 때문에 버전 업데이트가 필요했다. 그리고 문법이 달라져서 그런가 전체 리팩토링이 필요했다.
+   또, zustand를 사용해보면서 리덕스 리팩토링을 하는 대신 zustand로 마이그레이션 하는게 낫다고 판단했다.
+4. 현실적인 이유1: 배포 1년이 지나가면서 다음 달이면 AWS 프리티어가 종료된다. 한 달에 800~1100원 정도 서버비가 나왔는데 프리티어 종료 후 얼마가 더 나올지 모르겠고,, 그리고 vercel으로 배포하면 무료일테니 더이상 amplify를 사용할 필요가 없었다
+5. 현실적인 이유2: 3000원 정도 주고 샀던 도메인을 구입한지 1년이 지났는데, 연장하기 위해서는 1년에 33,000원을 지불해야했다. vercel.app의 도메인을 사용하거나 또 다른 저렴한 도메인으로 이동을 하는게 필요했다.
+
+# 배포 환경을 유지하는 브랜치 전략
+
+마이그레이션을 진행하기 위해 새로운 Next.js 프로젝트를 만들고, 기존 코드를 복붙해볼까 했는데, 기존에 1년 반 가량의 코드 변경 내역을 날리는건 아무래도 아쉽다는 생각이 들었다. 그래서 기존 코드들을 새로운 Next.js 프로젝트로 옮기는 방향을 선택했다.
+
+처음에는 새로운 브랜치를 만들고, 해당 브랜치에서 마이그레이션 작업이 100% 완료되면 메인 브랜치에 병합할까 했다. 왜냐하면 현재 서류 지원 중이기 때문에 배포 페이지에서 에러가 발생하면 곤란했기 때문이다.
+
+근데 메인 브랜치에 병합되지 않은 코드 내용들은 잔디가 심어지지 않는다는 아쉬움이 있었다.
+
+잔디에 그렇게 목숨 거는 편은 아니지만,, 요새 잔디 심지 않은지 2주가 넘어갔기 때문에 아무래도 신경쓰였다.
+
+고민을 하다가 아래와 같은 방식으로 처리했다.
+
+1. `git checkout -b prod` 으로 새롭게 prod 브랜치 생성
+2. amplify 콘솔에 접속해서 앱 설정 -> 브랜치 설정 -> 브랜치 추가해서 prod 추가, 리포지토리 설정 편집에서 프로덕션 브랜치를 prod으로 선택
+
+![프로덕션 브랜치 설정 화면](/static/images/my-pokemon-type/migration1.png)
+
+이렇게 하면 기본 amplifyapp 도메인과 메인 브랜치가 연결되고, prod 브랜치에는 커스텀 도메인 [mypkmn.info](http://mypkmn.info)가 연결된다.
+
+이후에 마이그레이션 기간 동안 메인 브랜치에 잔디를 심을 수 있고, 마이그레이션이 끝나면 다시 main 브랜치와 커스텀 도메인을 연결하면 된다! 그 전에 vercel으로 마이그레이션할 것 같지만 말이다.
+
+이제 로컬에서 `git checkout main` 을 실행해서 메인 브랜치로 돌아왔고, 생각난 김에 json 파일을 수정해서 UI에 보이는 텍스트를 변경했다. 자연스러운 영어 문장을 알려준 Sage 고마워!!!!!!!
+이후 add, commit, push를 진행했다. 근데 배포 실패,,
+
+![메인 브랜치 배포 실패 화면](/static/images/my-pokemon-type/migration2.png)
+
+빌드 로그에서 중요한 에러는 `npm error The` npm ci `command can only install with an existing package-lock.json` 였다
+npm ci를 실행하려고 하는데 현재 메인 브랜치에 package-lock.json가 설치되지 않았다~는 내용이다.
+
+근데 분명 package-lock.json이 있었는데,, 오랜만에 하는 배포 때문에 버전 이슈인가 싶다
+그래서 `npm install` 실행 후 다시 add, commit, push를 실행했다.
+
+이후 커스텀 도메인인 mypkmn.info와 연결된 배포 페이지에는 push 상황이 반영되지 않도록 prod 브랜치와 잘 연결된걸 확인할 수 있었다.
+
+그리고 amplifyapp 도메인에만 push 상황이 반영되도록 main 브랜치와 잘 연결된 것을 확인할 수 있었다.
+
+# 새로운 라이브러리와 프레임워크 설치
+
+이제 마이그레이션 진행을 위해 next.js를 포함한 새로운 프레임워크, 라이브러리를 설치할 차례다
+
+이번에 사용할 라이브러리, 프레임워크 목록은 아래와 같다
+
+- [ ] Next.js 15
+- [ ] React
+- [ ] TypeScript
+
+- [ ] Zustand
+- [ ] Tailwind CSS
+- [ ] tailwind-merge
+
+- [ ] clsx
+- [ ] i8next
+
+![기존 레거시 구조](/static/images/my-pokemon-type/migration3.png)
+
+이 이미지는 기존의 레거시 구조이다. legacy 폴더를 만들어서 기존의 파일들을 모두 넣고, mypokemontype이라는 최상위 위치 내에서 next.js를 설치할 예정이다.
+
+![기존 레거시 파일들을 레거시 폴더에 넣음](/static/images/my-pokemon-type/migration4.png)
+
+이렇게 기존의 .gitignore, README.md는 그대로 둔다. 이제 최상위 위치에서 next-temp라는 폴더를 생성해서 next.js를 설치한다.
+
+```
+npx create-next-app@latest next-temp --ts --app --eslint --tailwind --import-alias "@/*"
+```
+
+`next-temp`: next-temp라는 이름의 next.js 폴더를 생성 / `--ts` : 타입스크립트 적용 / `--app` next.js 앱 라우터 적용 / `--import-alias "@/*"`: @를 사용한 절대 경로 설정을 사용한다
+
+이 위치에서 `npx create-next-app@latest` 만 사용해서 설치하려 하면 legacy 폴더랑 계속 충돌해서 설치가 되지 않는다. next-temp 폴더 생성 후, 해당 폴더 내용들을 최상위로 옮겨준다.
+
+next.js 설치가 끝나면 next-temp 에 생성된 README.md을 삭제한다. 그리고 새로 생성된 .gitignore 에 있는 내용들은 기존의 .gitigonre에 복붙한 뒤에 삭제했다.
+
+![최상위 위치에 next.js 설치 완료](/static/images/my-pokemon-type/migration5.png)
+
+그럼 최종적으로 이 구조 완성,, 이제 최상위 위치에서 `npm run dev --turbopack` 을 실행하면 next.js 기본 페이지가 렌더링되는걸 확인할 수 있었다.
+
+여기서 add, commit, push를 하고 나니까 배포 실패함
+
+`Type error: Cannot find module 'features/darkModeSlice' or its corresponding type declarations.`
+
+legacy 폴더 안에 있는 App.tsx 등이 Next.js 빌드 경로에 포함되어있기 때문으로 추측된다. TypeScript 컴파일러가 tsconfig.json 기준으로 `legacy/src/**/*.ts` 같은 파일들을 포함해서 체크하기 때문이다.
+
+최상위 위치에 있는 tsconfig.json을 수정해서 `"exclude": ["node_modules", "legacy"]` 를 포함해서, legacy 내부 파일을 컴파일하지 않도록 했다.
+
+다시 add, commit, push를 했음에도 배포 실패함,,, 아마 amplify 설정의 문제일 것이라 생각이 든다. vercel 쓰다가 amplify 사용하니까 배포 속도가 너무 느리고 빌드 로그도 불친절하다는 생각이 들었다.
+
+어차피 이후 amplify에서 vercel으로 마이그레이션 해야하니까 그냥 vercel으로 배포했더니 잘 되었다! 이젠 vercel.app 도메인과 메인 브랜치를 연결했다!!
+
+까먹고 i18n 설치해서 세팅한 내용과 i18n을 선택한 이유는 이 블로그 포스트로..
+
+[리액트 컴포넌트에 i18n 적용하기](https://www.notion.so/i18n-231c7639cb4980298af7cabdc640b7ba?pvs=21)
+
+# `@` 경로와 `#` 경로 차이점
+
+기존 파일들을 가져오기 위해 새로운 프로젝트에서 components, store 폴더를 만들고 `@components/` 같은 경로로 import를 하려고 했다. 이를 위해 next.config.ts 에 경로를 추가해주는 과정이 필요했다.
+
+이전에 끝냈던 구똑 프로젝트 같은 경우에는 `'#app': path.resolve(__dirname, 'src/app'),` 같은 `#`을 사용했고, 다른 파일들에서 `` 과 같이 사용해서 import를 했다.
+
+```tsx
+// next.config.ts
+// 기존 사용 방식
+'#app': path.resolve(__dirname, 'src/app'), // 이렇게 경로 설정
+import { PATH } from '#app/routes' // import할 때 사용
+
+'@app': path.resolve(__dirname, 'src/app'), // @를 사용한 경로 설정
+import Layout from '@/app/layout' // import할 때 사용
+
+```
+
+이번 프로젝트에는 `@`를 사용하는 방식으로 nextjs 프로젝트를 설치했는데, `#`과 `@`의 기능적인 차이는 크게 없다고 한다. 다만 둘 중 하나를 정한 뒤에 통일적으로 사용하는게 좋다고. 찾아본 결과 vite, webpack, eslint 등에서는 @가 더 널리 사용되고 있기 때문에 이번에는 @를 사용해보기로 했다.
+
+```json
+// tsconfig.json
+    "paths": {
+      "@/*": ["./src/*"],
+      "@/components/*": ["./src/components/*"],
+      "@/types/*": ["./src/types/*"],
+      "@/stores/*": ["./src/stores/*"],
+      "@/styles/*": ["./src/styles/*"],
+      "@/lib/*": ["./src/lib/*"],
+      "@/hooks/*": ["./src/hooks/*"],
+      "@/locales/*": ["./public/locales/*"]
+    }
+```
+
+```tsx
+// next.config.ts
+import type { NextConfig } from 'next'
+import path from 'path'
+
+const nextConfig: NextConfig = {
+  reactStrictMode: true,
+  webpack: (config: any) => {
+    config.resolve.alias = {
+      ...config(config.resolve.alias || {}),
+      '@src': path.resolve(__dirname, 'src/app'),
+      '@components': path.resolve(__dirname, 'src/components'),
+      '@types': path.resolve(__dirname, 'src/types'),
+      '@stores': path.resolve(__dirname, 'src/stores'),
+      '@styles': path.resolve(__dirname, 'src/styles'),
+      '@lib': path.resolve(__dirname, 'src/lib'),
+      '@hooks': path.resolve(__dirname, 'src/hooks'),
+      '@localses': path.resolve(__dirname, 'public/locales'),
+    }
+```
+
+tsconfig.json과 next.config.ts에 모두 경로를 추가해준다.
+
+다음 글에는 Tailwind 설정과 Styled-components에서 Tailwind로 마이그레이션 하는 과정을 작성해야겠다

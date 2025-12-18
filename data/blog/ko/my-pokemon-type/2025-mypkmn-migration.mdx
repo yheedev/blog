@@ -114,7 +114,7 @@ legacy 폴더 안에 있는 App.tsx 등이 Next.js 빌드 경로에 포함되어
 
 # `@` 경로와 `#` 경로 차이점
 
-기존 파일들을 가져오기 위해 새로운 프로젝트에서 components, store 폴더를 만들고 `@components/` 같은 경로로 import를 하려고 했다. 이를 위해 nexr.config.ts 에 경로를 추가해주는 과정이 필요했다.
+기존 파일들을 가져오기 위해 새로운 프로젝트에서 components, store 폴더를 만들고 `@components/` 같은 경로로 import를 하려고 했다. 이를 위해 next.config.ts 에 경로를 추가해주는 과정이 필요했다.
 
 이전에 끝냈던 구똑 프로젝트 같은 경우에는 `'#app': path.resolve(__dirname, 'src/app'),` 같은 `#`을 사용했고, 다른 파일들에서 `` 과 같이 사용해서 import를 했다.
 

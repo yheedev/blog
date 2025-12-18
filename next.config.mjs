@@ -46,7 +46,6 @@ export default () => {
     reactStrictMode: true,
     trailingSlash: false,
     pageExtensions: ['ts', 'tsx', 'js', 'jsx', 'md', 'mdx'],
-    turbopack: {},
     images: {
       remotePatterns: [
         {

@@ -1,0 +1,517 @@
+---
+title: 'Server Actions를 사용해서 CSR에서 SSR으로 마이그레이션'
+date: '2025. 6. 10.'
+tags: ['Next.js', 'React Query', 'Vercel']
+topics: ['Guttok']
+draft: false
+summary: '프로덕션 및 로컬 환경에서 CSR/SSR 로그인 요청이 어떻게 동작하는지 정리'
+toc: true
+---
+
+구똑 프로젝트가 끝난지 2주 정도 지났는데 포트폴리오를 쓰면서 CSR 방식으로 구현한게 마음에 걸려서 SSR으로 변경해보기로 결정했다.
+
+현재 폴더 구조는 아래와 같다
+
+````mdx
+```text
+src/app/(auth)/forgotPassword/page.tsx
+							/login/page.tsx
+							/register/page.tsx
+
+			 /(protected)/mypage/ClientMypage.tsx
+			 /(protected)/mypage/ClientMypage.tsx
+													/page.tsx
+									/item/[id]/detail/ClientDetailView.tsx
+																	 /page.tsx
+```
+````
+
+CRUD, 마이페이지, 알림 페이지와 같이 유저 전용 페이지에 해당하는 것들은 `(protected)` 에, 그리고 로그인하지 않은 유저들이 접근 가능한 것들은 `(auth)`에 두었다.
+
+개발하면서 로그인하지 않은 유저들의 유저 전용 페이지에 접근하면 로그인 페이지로 리디렉션 시키려고 했다만 왜인지 로컬에서만 미들웨어가 동작하고 배포 환경에서는 동작하지 않았다. 그 때 디버깅을 하면서 (protected) 폴더 사용 및 유저 전용 페이지는 서버와 클라이언트를 구분해서 작성해두었던게 기억이 난다. 그래서 아쉽지만 useEffect를 사용해서 로그인 페이지로 리디렉션 처리를 해두고 끝냈는데 이번에 제대로 SSR 방식으로 바꾸면서 이 부분도 미들웨어를 사용해서 리디렉션 처리를 할 수 있도록 고쳐보고 싶었다.
+
+<hr className="invisible mt-1" />
+
+## 기존 코드
+
+```tsx
+// api/userAPI.ts
+
+import { BASE_URL } from '#constants/url'
+import type { userInfo } from '#types/user'
+
+// 마이페이지 조회 get
+export const getUserInfo = async (): Promise<userInfo> => {
+  const res = await fetch(`${BASE_URL}/api/users`, {
+    method: 'GET',
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      cookie: cookieHeader,
+    },
+  })
+
+  if (!res.ok && res.status === 401) {
+    throw new Error('로그인 세션이 만료되었습니다. 다시 로그인해주세요.')
+  }
+
+  if (!res.ok) {
+    throw new Error('유저 정보 불러오기 실패')
+  }
+
+  const json = await res.json()
+  return json.data as userInfo
+}
+```
+
+```tsx
+// api/userClient.ts
+
+'use client'
+
+import { useMutation } from '@tanstack/react-query'
+import {
+  // getUserInfo,
+  patchNickname,
+  patchPassword,
+  deleteUser,
+} from '#apis/userAPI'
+import { useAuthStore } from '#stores/auth/useAuthStore'
+import { useRouter } from 'next/navigation'
+import { PATH } from '#app/routes'
+import { userInfo } from '#types/user'
+import { toast } from '#hooks/useToast'
+
+// 마이페이지 조회 get
+export const useGetUserInfoClient = () => {
+  const { setUser } = useAuthStore()
+
+  const { mutate, data, isPending, isSuccess, isError, error } = useMutation({
+    mutationFn: getUserInfo,
+    onSuccess: (data: userInfo) => {
+      setUser({
+        id: data.id,
+        email: data.email,
+        nickName: data.nickName,
+        alarm: data.alarm,
+      })
+    },
+  })
+
+  return {
+    getUserInfoClient: mutate,
+    data,
+    isLoading: isPending,
+    isSuccess,
+    isError,
+    error,
+  }
+}
+```
+
+기존에는 userAPI.ts에서 api를 요청하는 부분을 작성하고, userClient에서 이 api 요청하는 부분을 클라이언트 컴포넌트에서 사용할 수 있도록 훅을 작성했다. 그리고 page.tsx 혹은 Client~.tsx 에 해당하는 클라이언트 컴포넌트에서 userClient에 작성한 훅을 import해서 사용하는 방식이었다.
+
+SSR으로 변경을 하면서 userAPI를 서버에서만 사용할 수 있도록 하기 위해 `'use server'`를 선언했다. 그리고 모든 API 요청에 있어서 회원 여부를 쿠키를 통해 파악하기 때문에 next/headers를 사용했다.
+
+```tsx
+// userAPI.ts
+'use server'
+
+import { BASE_URL } from '#constants/url'
+import type { userInfo } from '#types/user'
+import { cookies } from 'next/headers' // 추가
+
+// 마이페이지 조회 get
+export const getUserInfo = async (): Promise<userInfo> => {
+  const cookieStore = cookies()
+  const cookieHeader = cookieStore.toString()
+
+  const res = await fetch(`${BASE_URL}/api/users`, {
+    method: 'GET',
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      cookie: cookieHeader,
+    },
+  })
+
+  if (!res.ok && res.status === 401) {
+    throw new Error('로그인 세션이 만료되었습니다. 다시 로그인해주세요.')
+  }
+
+  if (!res.ok) {
+    throw new Error('유저 정보 불러오기 실패')
+  }
+
+  const json = await res.json()
+  return json.data as userInfo
+}
+```
+
+`import { cookies } from 'next/headers'` 를 추가하고 나면 아래와 같은 컴파일 에러가 발생했다.
+
+```
+Error: × You're importing a component that needs "next/headers". That only works in a Server Component which is not supported in the pages/ directory. Read more: <https://nextjs.org/docs/app/building->
+
+./src/apis/userAPI.ts
+
+Error:   × You're importing a component that needs "next/headers". That only works in a Server Component which is not supported in the pages/ directory. Read more: [<https://nextjs.org/docs/app/building->](<https://nextjs.org/docs/app/building->)
+  │ your-application/rendering/server-components
+  │
+  │
+   ╭─[C:\\Users\\...\\work\\guttok-front\\src\\apis\\userAPI.ts:5:1]
+ 2 │
+ 3 │ import { BASE_URL } from '#constants/url'
+ 4 │ import type { userInfo } from '#types/user'
+ 5 │ import { cookies } from 'next/headers'
+   · ──────────────────────────────────────
+ 6 │
+ 7 │ // 마이페이지 조회 get
+ 8 │ export const getUserInfo = async (): Promise<userInfo> => {
+   ╰────
+
+Import trace for requested module:
+
+./src/apis/userAPI.ts
+./src/apis/userClient.ts
+./src/contexts/QueryProvider/index.tsx
+
+```
+
+next/headers를 import하고 나면 userAPI.ts 파일 전체가 서버 전용 컴포넌트로 간주가 된다. 그래서 getUserInfo 뿐 아니라 userAPI.ts에 작성한 다른 api 요청 함수들도 클라이언트 컴포넌트나 클라이언트 훅에서 사용할 수 없어서 컴파일 에러가 발생하는 것이었다.
+
+나같은 경우에는 여전히 userAPI에서 사용한 훅을 userClient, QueryProvider 등 다른 클라이언트 컴포넌트에서 사용 중이라 발생했었다. 그래서 사용 중인 곳들을 모두 삭제하거나 주석 처리하고 나니 컴파일 에러가 사라진걸 확인할 수 있었다.
+
+여태까지 userAPI에서 api 요청을 하고, userClient에서 훅을 작성하고, 클라이언트 컴포넌트에서 훅을 가져와서 사용하는 구조는 CSR 기반의 리액트 쿼리에 의존한 구조인게 새삼 느껴졌다.
+
+애초에 useMutation, useQuery 같은 것들이 CSR 방식에서 사용되는 도구라는 것도 깨달았다,, useQuery를 통해 클라이언트 컴포넌트에서 서버 데이터를 가져오고, 로딩/에러 상태도 처리하고, useMutation으로 클라이언트 이벤트(토글 등)을 서버에 데이터 전송한다는 면에서 그렇다
+
+SSR로 마이그레이션하기 위해서는 여태까지 userClient.ts 같은 클라이언트 컴포넌트에 useMutation, useQuery를 사용하던 부분을 삭제하고, 서버 컴포넌트에서 직접 api를 호출한 뒤에 받아온 상태를 zustand에 주입하도록 변경하는게 좋겠다고 판단했다.
+
+<hr className="invisible mt-1" />
+
+## 그럼 토글은 어떻게 처리할까요
+
+마이페이지에는 유저 정보 가져오기 (GET), 유저 탈퇴 (DELETE), 유저 알림 수신 여부 변경(PATCH) api를 요청하고 있었다. 그리고 기존에 이것들은 useMutaiton을 사용해 대부분 처리를 하고 있었다.
+
+```tsx
+// mypage/ClientMypage.tsx
+
+export default function ClientMypage() {
+
+  const {
+    getUserInfoClient,
+    data: getMypage,
+    isError: isProfileError,
+  } = useGetUserInfoClient()
+
+  const { mutate: deleteAccount, isPending: isDeletingAccount } =
+    useDeleteUserClient() // 유저 탈퇴 훅
+
+  const { mutate: toggleAlarm, isPending: isTogglingAlarm } =
+    usepatchAlarmClient() // 유저 이메일 알림 수신 훅
+
+  useEffect(() => {
+    getUserInfoClient(undefined, {
+      onError: (error) => {
+        console.error('유저 정보 불러오기 실패:', error)
+        toast({
+          variant: 'destructive',
+          description: '세션이 만료되었거나 유저 정보를 불러오지 못했습니다.',
+        })
+        router.push(PATH.main)
+      },
+    })
+  }, [getUserInfoClient, router])
+
+  return (
+//이하생략
+            <Switch
+              aria-label="이메일 알림 수신 여부 설정 토글"
+              checked={user?.alarm}
+              onCheckedChange={() =>
+                toggleAlarm(undefined, {
+                  onSuccess: async () => {
+                    await getUserInfoClient()
+                    const willSubscribe = !getMypage?.alarm
+                    toast({
+                      description: willSubscribe
+                        ? '이메일 알림 수신을 받습니다.'
+                        : '이메일 알림 수신을 받지 않습니다.',
+                      variant: 'default',
+                    })
+                  },
+                  onError: () => {
+                    toast({
+                      description:
+                        '이메일 수신 여부 변경 중 오류가 발생했습니다.',
+                      variant: 'destructive',
+                    })
+                  },
+                })
+              }
+              disabled={isTogglingAlarm}
+            />
+
+//이하 생략
+
+          <Button
+            onClick={() => setShowDeleteDialog(true)}
+            className="bg-red-400 hover:bg-red-500 ml-4"
+            disabled={isDeletingAccount}
+          >
+            <span>탈퇴하기</span>
+          </Button>
+
+//이하 생략
+
+      <ConfirmDialog
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        title="정말 탈퇴하시겠습니까?"
+        description="탈퇴하시면 계정과 기록이 모두 삭제됩니다."
+        onConfirm={() =>
+          deleteAccount(undefined, {
+            onSuccess: () => {
+              toast({
+                description: '계정이 성공적으로 삭제되었습니다.',
+                variant: 'default',
+              })
+            },
+            onError: () => {
+              toast({
+                description: '계정 삭제 중 오류가 발생했습니다.',
+                variant: 'destructive',
+              })
+            },
+          })
+        }
+      />
+```
+
+```tsx
+// src/app/(protected)/mypage/page.tsx
+
+import ClientMyPage from './ClientMypage'
+
+export default async function MyPagePage() {
+  return <ClientMyPage />
+}
+```
+
+이제 ClientMypage에서 PATCH, DELETE API 요청을 처리하던 useMutation 훅들을 삭제하고 server actions를 사용해서 대체하기로 했다.
+
+그리고 GET 요청은 서버 컴포넌트인 mypage/page.tsx에서 직접 fetch를 사용해서 요청하도록 수정하기로 했다.
+
+클라이언트 컴포넌트의 상호작용을 통한 알림 토글이나 계정 삭제, CRUD 같은 이벤트로 상태를 갱신하려면 fetch로 서버 요청 → 응답 성공시 zustand 상태 갱신 → 실패하면 toast ui 처리로 진행하려했다.
+
+클라이언트 페이지에서 이뤄지는 상호작용을 클라이언트에서 처리하는게 SSR인가? 고민이 되었는데 SSR이란 페이지 최초 진입 시 서버에서 데이터를 맨 처음 가져와서 렌더링하는 구조이다. 이후 발생하는 클라이언트 상호작용들을 CSR 방식으로 처리하는 것은 자연스럽다고 한다.
+
+반대로 페이지 진입을 클라이언트에서 useQuery로 fetch하거나 클라이언트에서 쿠키를 조회하고, 서버 컴포넌트에서만 가능한 API 호출을 클라이언트에서 진행하는 것이 CSR 방식에 해당한다.
+
+그래서 버튼 클릭 후 클라이언트에서 fetch하는건 정상적이라고 한다. 아래 코드의 handleToggleAlarm() 을 클라이언트에서 사용하는건 SSR 흐름을 망가뜨리지 않는다.
+
+<hr className="invisible mt-1" />
+
+```tsx
+const { user, setUser } = useAuthStore()
+const [loading, setLoading] = useState(false)
+
+const handleToggleAlarm = async () => {
+  setLoading(true)
+  try {
+    const response = await fetch('/api/users/alarm', {
+      method: 'PATCH',
+      credentials: 'include',
+    })
+    if (!response.ok) throw new Error('서버 오류')
+
+    const json = await response.json()
+    const updatedAlarm = json?.data?.alarm ?? !user.alarm
+
+    setUser({ alarm: updatedAlarm }) // zustand 상태 반영
+    toast({ description: updatedAlarm ? '알림 ON' : '알림 OFF' })
+  } catch (e) {
+    toast({ description: '알림 설정 변경 실패', variant: 'destructive' })
+  } finally {
+    setLoading(false)
+  }
+}
+```
+
+<hr className="invisible mt-1" />
+
+# Server actions
+
+Next.js 14에 도입된 서버 액션을 사용하면 서버에서 직접 실행되는 함수를 클라이언트에서 안전하게 호출 가능하다.
+리액트 서버 컴포넌트 도입 이후, 기존 api route + fetch 구조를 대체하기 위해 사용되고 있다.
+
+서버 함수를 직접 export하고, 클라이언트에서는 form이나 버튼 이벤트를 통해 호출할 수 있다.
+
+```tsx
+// app/actions/userActions.ts
+'use server'
+
+import { cookies } from 'next/headers'
+
+export async function toggleUserAlarm() {
+  const cookie = cookies()
+  const session = cookie.get('session_id')
+
+  // DB, API 요청 등 서버 로직 수행
+  await fetch('<https://your-api/alarm>', {
+    method: 'PATCH',
+    headers: {
+      Cookie: cookie.toString(),
+    },
+  })
+}
+```
+
+```tsx
+// ClientMypage.tsx
+
+'use client'
+
+import { toggleUserAlarm } from '#/app/actions/userActions'
+
+export default function AlarmToggleForm() {
+  return (
+    <form action={toggleUserAlarm}>
+      <button type="submit">알림 설정 토글</button>
+    </form>
+  )
+}
+```
+
+이런 식으로 서버 컴포넌트를 클라이언트에서 `<form>` 혹은 `<button>` 을 통해 호출 가능..
+
+### 장점
+
+api 라우팅을 생략한다고 한다
+라우팅 생략이란 userAPI.ts 없이 서버 로직 실행이 가능하다는 뜻; 그래도 여전히 userAction.ts를 작성해야하지 않나 싶었는데.. 어쨌든 이건 라우트를 만드는게 아니라 직접 실행될 함수를 선언하는 것이라고 한다.
+
+내가 작성했던 userAPI.ts와 userAction.ts의 차이점
+
+- userAPI는 CSR 기반 fetch이고 userAction은 서버 액션으로 SSR 기반 구축해서 직접 함수를 호출
+- userAPI는 클라이언트에서 fetch를 하고, userAction은 `<form action={...}>` 또는 서버 내부 호출
+- userAPI는 쿠키 접근을 위해서는 req.headers를 사용하고, 서버 액션은 cookies()를 바로 사용 가능
+
+내가 기존에 사용했던 방식은 apis/userAPI.ts에서 GET /api/users를 요청하고, apis/userClient.ts에서 클라이언트에서 호출할 함수를 작성한 형식.
+
+- 그 때의 흐름과정: 사용자가 클라이언트에서 버튼 클릭 -> fetch(/apis/users) 실행 -> Next.js는 userAPI 라우트 실행 -> 서버 API 요청 후 응답
+
+이 때 단점은 apis/userAPI.ts를 따로 구성해야한다는 점. 그리고 클라이언트 -> API 라우트 -> 서버 코드 실행 -> 응답 반환이라는 구조. 그리고 쿠키, 세션 접근 등을 req.headers로 처리해야한다는 점이었다.
+
+반면에 서버 액션을 사용하게 된다면 app/actions/userAction.ts 에서 서버 액션 함수를 라우트 없이 정의하고, ClientMypage.tsx에서 `<form action={getUserInfo} />` 와 같이 사용할 수 있다는 것.
+
+- 서버 액션 흐름 과정: -> next.js가 자동으로 해당 서버 액션 함수 호출 -> 서버에 api 요청 -> 결과 클라이언트로 자동 반환
+
+그래서 fetch 호출 필요 없이 폼 제출 만으로 서버 로직을 실행할 수 있다. 쿠키 접근도 간편함. 그리고 함수는 클라이언트로 전달되지 않으니 보안도 향상됨.
+
+서버 액션의 장점을 요약하자면
+
+- api 라우팅 생략 (userAPI 없이 서버 로직 실행 가능)
+- fetch 불필요 (클라이언트에서 직접 서버 함수 호출)
+- 세션, 쿠키 접근 쉬움. (next/headers의 cookies, headers 사용하면 됨)
+- 보안성 향상 (함수 내용을 클라이언트로 전송하지 않음)
+
+### 단점
+
+- `onClick={() => toggleUserAlarm()}`과 같은 방식으로 클라이언트 함수에서 호출할 수 없다.
+- 대부분 form `action={...}` 을 사용해서 호출해서 form 기반 구조가 필요함.
+  - 그래서 목록 조회는 서버 액션보다 fetch가 적합하다. 모든 부분에서 다 서버 액션 사용이 적절하진 않음.
+  - 알림 설정 토글, 닉네임 변경,
+- 비동기 상태 핸들링은 별도 처리가 필요하다.
+  - useFormState, useOptimistic 등과 함께 사용하길 권장함.
+- Next.js 14 이후 도입되어서 아직 안정화가 진행 중.
+
+<hr className="invisible mt-1" />
+
+# 로그아웃 POST API에 서버 액션 적용해보기
+
+```tsx
+// userAction.ts
+
+'use server'
+
+import { cookies } from 'next/headers'
+import { BASE_URL } from '#constants/url'
+
+// 로그아웃 POST
+export async function logoutAction() {
+  const cookieStore = await cookies()
+  cookieStore.delete('SESSION')
+  const cookieHeader = cookies().toString()
+
+  const res = await fetch(`${BASE_URL}/api/users/signout`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Cookie: cookieHeader,
+    },
+    credentials: 'include',
+  })
+
+  if (!res.ok) {
+    const errorData = await res.json()
+    throw new Error(errorData.message || '로그아웃 실패')
+  }
+}
+```
+
+일단 마이페이지부터 변경해보려고 로그아웃 API 요청하던 부분을 userAction.ts를 생성해서 작성해보았다.
+
+```tsx
+// ClientMypage.tsx
+'use client'
+
+import { logoutAction } from '#actions/authAction'
+
+//이하생략
+
+  const handleLogout = () => {
+    startTransition(async () => {
+      try {
+        await logoutAction()
+        logout()
+        router.push(PATH.main)
+        toast({ description: '로그아웃 되었습니다', variant: 'default' })
+      } catch (error) {
+        toast({
+          description: '로그아웃 처리 중 오류 발생',
+          variant: 'destructive',
+        })
+      }
+    })
+  }
+
+// 이하생략
+
+        <div className="flex justify-end mt-3 mb-9">
+          <form action={handleLogout}>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button className="text-white">로그아웃</Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>로그아웃 하시겠습니까?</AlertDialogTitle>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>취소</AlertDialogCancel>
+                  <AlertDialogAction asChild>
+                    <button type="submit">로그아웃</button>
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </form>
+
+```
+
+1. 마이페이지 클라이언트 컴포넌트에서 userAction에서 작성한 logoutAction을 import
+2. handleLogout을 통해 토스트 UI 와 함께 logoutAction을 실행시킬 수 있도록 훅 작성
+3. UI 컴포넌트에서 `<form action={handleLogout}>` 으로 서버 액션 사용,,
+
+이렇게 했는데 개발자 도구의 네트워크에서 아무 요청이 이뤄지지 않았다. 어떤 때에는 `localhost:3000/mypage` 로 요청이 보내지고 500 상태가 반환되었다.

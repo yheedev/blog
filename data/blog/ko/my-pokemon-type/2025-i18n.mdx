@@ -1,20 +1,16 @@
 ---
-title: '리액트 컴포넌트에 i18n 적용하기'
+title: '리액트 컴포넌트에 i18next 적용하기'
 date: '2025-07-15'
-tags: ['React', 'i18n']
+tags: ['React', 'Zustand', 'i18next']
 topics: ['My Pokemon Type']
 draft: false
-summary: 'React 컴포넌트에 i18n 설치 및 사용하는 법'
+summary: 'React 컴포넌트에 i18next 설치 및 사용하는 법'
 toc: true
 ---
 
-# 리액트 컴포넌트에 i18n 적용하기
+최초 작성: 2025. 7. 15. [notion blog](https://www.notion.so/yheedev/i18n-231c7639cb4980298af7cabdc640b7ba)
 
-tag: React, Redux, Zustand
-About: My Pokemon Type
-생성 일시: 2025년 7월 15일 오후 8:40
-
-이 글을 React, Zustand, Redux 등 어떤 게시판에 올릴지 고민이 되었는데,, 앞으로 zod 같은 라이브러리에 대해 작성할 필요도 있으니까 프론트엔드 라이브러리에 대해 공부한걸 기록하는 카테고리를 추가해야겠다
+<hr className="invisible my-3" />
 
 mypkmn 마이그레이션 세팅 중 i18next 설치를 까먹었다가 다운로드 받았다
 
@@ -26,7 +22,38 @@ npm install i18next react-i18next
 
 # 리덕스 툴킷 스토어를 사용한 기존 방식
 
-[https://github.com/stillcorners/mypokemontype/blob/f17fad8a7ec467cb5f6e916144a982852a813f1b/src/stores/useLanguageStore.tsx](https://github.com/stillcorners/mypokemontype/blob/f17fad8a7ec467cb5f6e916144a982852a813f1b/src/stores/useLanguageStore.tsx)
+[깃허브 코드](https://github.com/yheedev/mypokemontype/blob/f17fad8a7ec467cb5f6e916144a982852a813f1b/src/stores/useLanguageStore.tsx)
+
+```tsx
+import i18n from '@/i18n'
+import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
+import { langs, getInitialLang } from '@/constants/langs'
+import { LanguageStore } from '@/types/language'
+
+export const useLanguageStore = create<LanguageStore>()(
+  persist(
+    (set) => {
+      const initialLang = getInitialLang()
+      i18n.changeLanguage(initialLang)
+
+      return {
+        lang: initialLang,
+        translate: langs[initialLang],
+        setLanguage: (lang) => {
+          localStorage.setItem('lang', lang)
+          i18n.changeLanguage(lang)
+          set({ lang, translate: langs[lang] })
+        },
+      }
+    },
+    {
+      name: 'language-storage',
+      partialize: (state) => ({ lang: state.lang }),
+    }
+  )
+)
+```
 
 이전에 한/영/일 3개국어를 지원하는 기능을 구현할 때에는 리덕스 툴킷을 사용해서 구현했었다.
 
@@ -46,9 +73,35 @@ npm install i18next react-i18next
 
 나 같은 경우에는 그리 작성할 내용이 많지 않았고, mypkmn 같은 3페이지의 작은 웹 앱에서는 쓰기에 나쁘지 않았던 방식이라고 생각이 든다.
 
+<hr className="invisible my-3" />
+
 # i18next 사용해서 구현할 방식
 
-[https://github.com/stillcorners/mypokemontype/blob/f17fad8a7ec467cb5f6e916144a982852a813f1b/src/i18n.ts](https://github.com/stillcorners/mypokemontype/blob/f17fad8a7ec467cb5f6e916144a982852a813f1b/src/i18n.ts)
+[깃허브 코드](https://github.com/yheedev/mypokemontype/blob/f17fad8a7ec467cb5f6e916144a982852a813f1b/src/i18n.ts)
+
+```tsx
+import i18n from 'i18next'
+import { initReactI18next } from 'react-i18next'
+
+import ko from '@/locales/ko/ko.json'
+import en from '@/locales/en/en.json'
+import ja from '@/locales/ja/ja.json'
+
+i18n.use(initReactI18next).init({
+  fallbackLng: 'ko',
+  resources: {
+    ko: { translation: ko },
+    en: { translation: en },
+    ja: { translation: ja },
+  },
+  lng: 'ko',
+  interpolation: {
+    escapeValue: false,
+  },
+})
+
+export default i18n
+```
 
 ```tsx
 // components/UI/SelectorMode/index.tsx
@@ -86,6 +139,8 @@ i18next같은 경우에는 t() 함수에 memoized + i18next 내부에서 효율�
 
 현재 프로젝트의 마이그레이션 방향인 Next.js 15 + CSR + 다국어 지원인걸 고려해서, 유저가 선택한 언어를 스토어에서 간단하게 관리하고, i18n은 다국어 리소스를 대응하는 역할으로 분리하는게 좋겠다고 판단했다.
 
+<hr className="invisible my-3" />
+
 # 성능 상의 유의미한 차이점이 있나요
 
 결국 둘 다 json 번역 리소스를 사용하고, CSR 리액트 환경인걸 감안했을 때 i18n을 적용했을 때 성능적으로 나아지는게 있는지 궁금했다.
@@ -103,6 +158,8 @@ i18next는 useTranslation()에서 t() 함수 자체를 캐싱해두기 때문에
 i18n도 마찬가지이다. i18n.ts에서 resources에 세 언어의 json 파일을 모두 메모리에 로드한다.
 
 만약 json 파일을 서버에서 가져오는 경우, 추가적인 라이브러리를 설치해서 lazy loading을 할 수 있다.
+
+<hr className="invisible my-3" />
 
 # 성능 개선을 위한 lazy loading 적용
 
@@ -154,7 +211,31 @@ npm install i18next-http-backend
 
 그리고 HttpBackend를 추가해서 i18n.ts를 수정해주었다.
 
-[https://github.com/stillcorners/mypokemontype/blob/fea7638f586899bd06a6053ad9d3a6f018950d9f/src/i18n.ts](https://github.com/stillcorners/mypokemontype/blob/fea7638f586899bd06a6053ad9d3a6f018950d9f/src/i18n.ts)
+[깃허브 코드](https://github.com/yheedev/mypokemontype/blob/fea7638f586899bd06a6053ad9d3a6f018950d9f/src/i18n.ts)
+
+```tsx
+import i18n from 'i18next'
+import { initReactI18next } from 'react-i18next'
+import HttpBackend from 'i18next-http-backend'
+
+i18n
+  .use(HttpBackend)
+  .use(initReactI18next)
+  .init({
+    fallbackLng: 'ko',
+    ns: ['translation'],
+    defaultNS: 'translation',
+    backend: {
+      loadPath: '/locales/{{lng}}/{{ns}}.json',
+    },
+    lng: 'ko',
+    interpolation: {
+      escapeValue: false,
+    },
+  })
+
+export default i18n
+```
 
 기존에 직접 json을 import했던 방식을 수정하고, 초기에 한국어만 로딩하도록 변경한다. 이를 통해 메모리 절약이 가능하고, 이 방식은 Vercel의 정적 배포에 호환된다.
 

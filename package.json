@@ -3,8 +3,8 @@
   "version": "2.4.0",
   "private": true,
   "scripts": {
-    "start": "next dev",
-    "dev": "next dev",
+    "start": "next dev --webpack",
+    "dev": "next dev --webpack",
     "build": "next build --webpack",
     "serve": "next start",
     "analyze": "cross-env ANALYZE=true next build --webpack",

@@ -1,0 +1,123 @@
+---
+title: '구독 서비스 관리 및 알림 웹 앱: 구똑'
+date: '2025-06-06'
+tags:
+  [
+    'Next.js',
+    'TypeScript',
+    'React',
+    'Zustand',
+    'React Query',
+    'Tailwind CSS',
+    'Radix UI',
+    'Zod',
+    'Vercel',
+  ]
+topics: ['Guttok']
+draft: false
+summary: '구똑 소개 및 주요 기능 설명'
+toc: true
+---
+
+<div>
+    <div className="my-8">
+    <img
+        src="/static/images/guttok/image.png"
+        alt="구똑 메인 화면"
+        className="w-full rounded-lg shadow-lg"
+    />
+    <img
+        src="/static/images/guttok/image%201.png"
+        alt="구똑 구독 관리 화면"
+        className="rounded-lg shadow-md"
+    />
+    </div>
+
+    <div className="my-8 grid grid-cols-1 gap-4 md:grid-cols-3">
+
+  <img
+    src="/static/images/guttok/image%202.png"
+    alt="구똑 알림 설정"
+    className="rounded-lg shadow-md"
+  />
+  <img
+    src="/static/images/guttok/image%203.png"
+    alt="구똑 통계 화면"
+    className="rounded-lg shadow-md"
+  />
+  <img
+    src="/static/images/guttok/image%204.png"
+    alt="구똑 결제 관리"
+    className="rounded-lg shadow-md"
+  />
+</div>
+</div>
+
+<aside>
+
+- 깃허브 저장소: https://github.com/TeamGuttok/front
+
+- 동작 테스트 영상: https://www.youtube.com/watch?v=a84maY1SPt4
+
+<hr className="invisible my-3" />
+
+</aside>
+
+# 구똑: 구독을 똑똑하게
+
+"한눈에 보는 내 구독 서비스, 자동 알림으로 더 스마트하게!"
+
+이 프로젝트는 점차 다양해지는 구독 서비스 (예: 넷플릭스, 유튜브 프리미엄, 챗지피티 등)와 고정 지출 (예: 통신비, 주거비 등)을 효율적이고 체계적으로 관리할 수 있도록 돕는 플랫폼입니다.
+사용자는 구독 서비스 목록에서 선택하거나 직접 입력하여, 연/월/주 단위로 결제 주기를 설정하고 결제 금액, 결제 수단, 결제 여부 등을 편리하게 관리할 수 있습니다. 등록한 고정지출은 등록한 결제 일 하루 전, 오전 09시에 리마인드 알림이 발송되어 결제일을 놓치지 않도록 도와줍니다.
+
+## **👥 팀원 구성**
+
+| **이름**      | **역할**          | **담당 업무**                                      |
+| ------------- | ----------------- | -------------------------------------------------- |
+| 윤희은 (본인) | 프론트엔드 개발자 | 프로젝트 리딩, 기획, 디자인, 프론트엔드 개발, 배포 |
+| 강주철        | 백엔드 개발자     | 기획, 디자인, 백엔드 개발, 서버 배포               |
+| 오상민        | 백엔드 개발자     | 기획, 디자인, 백엔드 개발, 서버 배포               |
+
+## **사용 스택**
+
+- **언어, 프레임워크** : TypeScript, React, Next.js 15
+- **배포 및 도메인 관리** : Vercel
+- **상태 및 데이터 관리** : Zustand, TanStack Query
+- **스타일 및 UI 구성, 유효성 검증** : Tailwind, Radix UI, clsx, Zod
+- **개발 도구 및 협업 환경** : ESLint, Prettier, Jira, Discord
+
+## **주요 기능**
+
+**애플리케이션 구조 및 라우팅**
+
+- Next.js 15의 App Router를 기반으로 파일 중심의 라우팅 및 중첩 레이아웃 구성
+- 미들웨어를 활용해 로그인하지 않은 사용자의 접근을 제한하고 인증 흐름 제어
+
+**UI/UX 구현**
+
+- 사용자 정보 수정, 구독 서비스 등록 등 주요 페이지를 `React` 기반 컴포넌트로 분리하여 구성
+- `Radix UI`, `Tailwind CSS`로 반응형 및 접근성 있는 컴포넌트 구성
+- `Zod`를 사용해서 사용자 입력값에 대한 유효성 검증 및 에러 메시지 표시 처리
+
+**클라이언트 상태 관리**
+
+- `zustand`와 `zustand-persist`를 사용해 로그인 상태, 사용자 정보, 구독 서비스 입력값 등 클라이언트 상태 유지
+- 세션 스토리지를 기반으로 새로고침 이후에도 상태를 복원할 수 있도록 처리
+
+**API 통신 및 인증 흐름**
+
+- **React Query로 API 요청 분리 및 데이터 캐싱**
+  - 인증, 구독, 알림 등 주요 도메인별로 `api/`와 `client/`를 나눠 요청과 훅을 분리
+  - `queryKey`를 기반으로 필요한 데이터만 요청하고, 변경 시 자동으로 갱신 처리 (`invalidateQueries` 활용)
+- **세션 기반 인증 흐름 처리**
+  - 로그인/회원가입/로그아웃 등 인증 요청 시 세션 정보를 활용해 접근 제어
+  - 사용자의 로그인 여부에 따라 적절한 UI 제어 및 기능 접근 제한 구현
+
+**배포 및 CI/CD**
+
+- **도메인 및 HTTPS 설정**
+  - AWS Route 53을 통해 도메인 등록
+  - AWS ACM으로 SSL 인증서 적용 및 HTTPS 설정 완료
+- **CI/CD 자동화**
+  - Vercel을 사용해서 배포해서 CI/CD 자동화 및 배포 시간 50% 단축
+  - AWS Amplify를 사용하다가 마이그레이션

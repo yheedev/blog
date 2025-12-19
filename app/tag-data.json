@@ -15,6 +15,15 @@
   "book": 1,
   "reflection": 1,
   "multi-author": 1,
+  "aws": 1,
+  "amplify": 1,
+  "route-53": 1,
+  "react": 4,
+  "redux": 1,
+  "typescript": 3,
+  "redux-toolkit": 1,
+  "i18n": 1,
+  "nextjs": 1,
   "html": 1,
   "accessibility": 1
 }

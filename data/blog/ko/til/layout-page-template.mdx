@@ -1,0 +1,120 @@
+---
+title: 'layout, page, template 차이점'
+date: '2025. 07. 17.'
+tags: ['Next.js']
+topics: ['TIL']
+draft: false
+summary: 'layout, page, template의 개념과 사용 예시 정리'
+toc: true
+---
+
+리액트만 사용하다가 next.js를 처음 사용할 때 눈에 띄었던 것은 `index.tsx`가 없다는 것,,
+리액트를 사용할 때에는 `index.tsx`에서 대부분의 UI 구조와 컴포넌트들을 가져왔었는데, next.js 15에서는 layout과 page를 같이 사용해서 라우팅과 UI 구조를 같이 설계할 수 있다는 장점이 있다. 이것들을 어떻게 사용할지 정리해본다.
+
+<hr className="invisible mt-1" />
+
+## 1. page.tsx
+
+경로 단위의 화면을 나타낸다. 사용자가 `/` 경로에 접근하면 `app/page.tsx` 가 렌더링된다.
+이를 위해 반드시 리액트 컴포넌트에서 export default 를 사용한다.
+
+```tsx
+// src/app/page.tsx
+import Offense from '@/app/[lang]/page'
+import { redirect } from 'next/navigation'
+import { PATH } from '@/app/routes'
+
+export default function Main() {
+  redirect(PATH.offense.replace(':lang', 'ko'))
+}
+```
+
+```tsx
+// src/app/[lang]/page.tsx
+'use client'
+
+import Title from '@/components/UI/Title'
+import Selector from '@/components/UI/Selector'
+import React from 'react'
+
+export default function Offense({ params }: { params: { lang: string } }) {
+  return (
+    <main>
+      <Title />
+      <div className="m-4 grid grid-cols-1 gap-12 p-4 lg:grid-cols-2">
+        <Selector />
+      </div>
+    </main>
+  )
+}
+```
+
+`/`에 접속하면 자동으로 `/ko` 혹은 `/en`, `/ja`와 같이 유저가 선택한 언어에 맞는 메인페이지를 렌더링하도록 앱 라우터를 사용했다. 근데 이 방식은 텍스트가 깜빡이는 문제가 있어서 수정할듯,,
+
+<hr className="invisible mt-1" />
+
+## 2. layout.tsx
+
+특정 경로 이하의 페이지들에 공통 UI를 제공할 수 있다. 예를 들어 특정한 페이지에서 모두 공통적으로 보여주는 타이틀, 헤더 같은 컴포넌트를 두기에 적합하다.
+
+`{children}`을 필수로 포함하며, `{children}`에는 이 `layout.tsx`과 동일한 위치 혹은 하위에 위치한 page.tsx가 위치한다.
+
+```tsx
+// src/app/layout.tsx
+
+import type { Metadata } from 'next'
+import './global.css'
+import Layout from '@/components/Layout'
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="ko">
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1"></meta>
+      </head>
+      <body>
+        <Layout>{children}</Layout>
+      </body>
+    </html>
+  )
+}
+```
+
+위에 작성한 `src/app/layout.tsx` 같은 경우, `{children}`에 `src/app/page.tsx`가 들어가고, `src/app/[lang]/page.tsx` 가 들어갈 수 있다.
+
+<hr className="invisible mt-1" />
+
+## 3. template.tsx
+
+`layout.tsx`과 비슷하게 공통된 라우트에서 사용되는 UI 컴포넌트를 정의한다는 점에서 같다.
+
+`layout.tsx`는 캐싱된 상태로 유지된다. 페이지 전환 시에도 전체 레이아웃은 바뀌지 않고 `{children}` 만 바뀐다. 그래서 타이틀, 공통 푸터 같이 모든 페이지에서 사용되는 UI를 정의하기에 적합하다.
+
+반면에 `template.tsx`는 매번 새로 마운트되는 구조로, 내부 상태를 매번 초기화한다.
+
+그래서 같은 레이아웃의 경로 내에서 다른 하위 페이지로 이동함에도 레이아웃 자체를 새로 그리고 싶을 때 사용한다. (ex: `src/app/page.tsx -> src/app/signin/page.tsx)`
+
+주로 폼 입력 상태를 유지하지 않아야할 때, 페이지 이동 시 상태 초기화가 필요할 때, `/product/[id]` 처럼 제품마다 레이아웃을 새로 렌더링할 때 사용하는 것도 적절하다. layout과 다르게 페이지 마다 완전히 다른 레이아웃을 사용하고 싶을 때 주로 사용한다.
+
+```tsx
+// app/blog/[slug]/template.tsx
+export default function BlogPostTemplate({ children }: { children: React.ReactNode }) {
+  return <div className="blog-post">{children}</div>
+}
+```
+
+<hr className="invisible mt-1" />
+
+## 4. layout, template 차이점/특징 요약
+
+layout.tsx : 최초 렌더링 1회, 이후 페이지가 바뀌어도 유지됨
+공통 구조를 감쌀 때 사용 (예: 헤더, 사이드바, 푸터 등)
+내부 상태(state)나 DOM은 경로가 바뀌어도 유지됨
+
+→ 공통 요소가 많은 앱, 자연스러운 UI/UX가 중요한 구조에 적합
+
+template.tsx: 경로가 바뀔 때마다 다시 렌더링됨
+각 페이지마다 레이아웃이 고유하거나, 내부 상태를 초기화하고 싶을 때 사용
+React 컴포넌트가 매번 새로 마운트됨
+
+→ 페이지별 transition, 폼 초기화, 상태 보존이 불필요한 동적 페이지 등에 적합

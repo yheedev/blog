@@ -1,0 +1,62 @@
+---
+title: '레벨1: 성격 유형 검사하기'
+date: '2025-12-19'
+tags: ['javascript']
+topics: ['algorithm']
+draft: false
+summary: ''
+toc: true
+---
+
+```js
+function solution(survey, choices) {
+  let scores = { R: 0, T: 0, C: 0, F: 0, J: 0, M: 0, A: 0, N: 0 }
+
+  for (let i = 0; i < survey.length; i++) {
+    const first = survey[i][0]
+    const second = survey[i][1]
+
+    if (choices[i] < 4) {
+      scores[first] += 4 - choices[i]
+    } else if (choices[i] > 4) {
+      scores[second] += choices[i] - 4
+    }
+  }
+
+  let result = ''
+
+  scores['R'] >= scores['T'] ? (result += 'R') : (result += 'T')
+  scores['C'] >= scores['F'] ? (result += 'C') : (result += 'F')
+  scores['J'] >= scores['M'] ? (result += 'J') : (result += 'M')
+  scores['A'] >= scores['N'] ? (result += 'A') : (result += 'N')
+
+  return result
+}
+```
+
+## 공부/검색 내용
+
+- 각 지표당 질문 갯수는 가변적임. 여러 질문이 같은 지표를 반복 측정 가능하며, 어떤 지표에는 질문이 0개일 수도 여러 개일 수 있음.
+- 단 하나의 지표에서 각 성격 유형 점수가 같을 경우, 두 성격 유형 중 사전 순으로 빠른 (알파벳 순서) 성격 유형을 검사자의 성격 유형이라 판단함.
+- result에 결과 문자열을 넣는 것보다 각 성격 유형 (R, T, C, F, J, M, A, N)이 몇 점인지 기록해야 함
+
+- 객체로 점수 저장한 뒤에 언제 분리하고 합칠지, 복잡도와 명확도를 두고 트레이드오프 고려하는 것이 필요
+
+## 다른 코드
+
+```js
+function solution(survey, choices) {
+  const MBTI = {}
+  const types = ['RT', 'CF', 'JM', 'AN']
+
+  types.forEach((type) => type.split('').forEach((char) => (MBTI[char] = 0)))
+
+  choices.forEach((choice, index) => {
+    const [disagree, agree] = survey[index]
+
+    MBTI[choice > 4 ? agree : disagree] += Math.abs(choice - 4)
+  })
+
+  return types.map(([a, b]) => (MBTI[b] > MBTI[a] ? b : a)).join('')
+}
+```

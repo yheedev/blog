@@ -1,0 +1,124 @@
+---
+title: 'clsx, cn, twMerge의 차이점'
+date: '2025. 07. 15.'
+tags: ['Tailwind CSS', 'JavaScript']
+topics: ['TIL']
+draft: false
+summary: ''
+toc: true
+---
+
+최초작성: 2025. 7. 15. [notion blog](https://www.notion.so/yheedev/clsx-cn-twMerge-231c7639cb498099a6e2dc179de08c4a)
+
+이번에 styled-components를 사용해서 스타일을 작성했던 포켓몬 타입 계산기를 tailwind css를 사용해서 마이그레이션 하고 있는데, 언어에 따라 달라지는 조건부 스타일이 많아서 이번에 cn을 사용해보기로 했다.
+
+이에 앞서 clsx, cn, twMerge의 차이점과 특징을 모두 정리해본다.
+
+clsx, cn, twMerge는 Tailwind CSS를 사용하는 프로젝트에서 자주 사용되는 클래스 병합 유틸리티들이다.
+
+각 도구는 목적이 조금씩 다르며, 함께 사용할 때 가장 강력한 효과를 내기 때문에 주로 다 같이 사용되는 경우가 많다.
+
+<hr className="invisible mt-1" />
+
+## 1. `clsx`
+
+`npm install clsx`로 설치해서 사용하는 외부 라이브러리이다.
+
+`isActive && 'bg-red-500'` 같은 조건부 클래스 처리가 가능하다는 장점이 있다. 이 때 falsy 값(`null`, `undefined`..)은 자동으로 무시한다.
+
+조건을 작성할 때 배열, 객체, 문자열 등 사용이 가능하다.
+
+```tsx
+import clsx from 'clsx'
+
+clsx('a', 'b') // "a b"
+clsx('a', false && 'b', 'c') // "a c"
+clsx({ a: true, b: false, c: true }) // "a c"
+clsx(['a', null, 'b']) // "a b"
+```
+
+```tsx
+import clsx from 'clsx'
+
+const letterSpacing = lang === 'ko' ? 'tracking-widest' : 'tracking-wide'
+const textColor = isDarkMode && isActive ? 'text-card' : 'text-text'
+
+return(
+	<>
+	<span
+        className={clsx(
+          'font-sans',
+          lang === 'jp' ? 'font-black text-[0.85rem]' : 'font-light text-[0.85rem]',
+          textColor, letterSpacing
+        )}
+      >
+        {text}
+      </span>
+</>
+```
+
+clsx의 가장 큰 특징은 위에서 선언한 `letterSpacing`, `textColor` 같이 조건 분기에 따른 클래스를 선언해서 사용할 수 있다는 것이다. 중복 스타일이 적용되는 아이콘이나 버튼 같은 컴포넌트에 일괄적으로 적용할 때 편리했던 기억이 있다.
+
+<hr className="invisible mt-1" />
+
+## 2. `twMerge`
+
+`npm install tailwind-merge` 를 통해 설치해서 사용하는 외부 라이브러리이다.
+Tailwind 클래스의 중복을 병합하는 데 특화되었다.
+
+```tsx
+clsx('bg-red-500', false && 'bg-blue-500') // → "bg-red-500"
+clsx('bg-red-500', true && 'bg-blue-500') // → "bg-red-500 bg-blue-500"
+
+twMerge('bg-red-500 bg-blue-500') // bg-blue-500
+```
+
+`clsx`는 스타일 중복 선언이 될 경우, 자동으로 스타일을 병합하거나 우선순위를 정리하지 않는다.
+
+브라우저에서 스타일 적용 여부를 확인할 경우, 실제 스타일 적용은 맨 뒤에 있는 bg-blue-500이 적용될 것이다. 하지만 이는 clsx의 기능이 아닌 브라우저의 CSS 우선순위에 따라 적용된 처리 결과이다. clsx를 사용해서 동일한 속성의 스타일을 선언하면 둘 다 적용이 된다.
+
+이에 비해 twMerge의 가장 큰 장점은 동일 속성의 스타일의 충돌을 방지할 수 있다는 것이다. 충돌된 스타일이 있을 경우 자동으로 병합해서 후순위의 스타일을 적용한다. 이렇게 클래스 충돌을 제거해서 더 예측 가능한 UI 결과를 만들어줄 수 있다는 장점이 있다.
+
+다만 twMerge는 hover:, focus:, md: 등 tailwind 공식 variant는 잘 병합할 수 있지만, hover:focus 와 같이 중첩된 variant는 순서에 따라 병합이 실패할 수 있다.
+또, btn, theme과 같이 공식 tailwind에 없는 커스텀 prefix에 병합이 필요할 경우, extendTailwindMerge를 추가적으로 사용해서 병합을 할 수 있다.
+
+<hr className="invisible mt-1" />
+
+## 3. `cn`
+
+프로젝트 내에서 직접 파일을 생성해서 만든 유틸 함수로, clsx와 twMerge를 하나로 묶어서 사용할 수 있다.
+
+```tsx
+// libs/utils.ts
+
+import { clsx, type ClassValue } from 'clsx'
+import { twMerge } from 'tailwind-merge'
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(...inputs))
+}
+```
+
+```tsx
+        <div
+          className={cn(
+            'flex items-center justify-center justify-items-center border-t-0 border-r-0 border-l-0 px-[4rem] py-2 pb-6 text-center align-middle md:py-2 lg:pt-2',
+            lang === 'ko' ? 'indent-5 tracking-[7px]' : 'tracking-[3px]',
+            mode === 'offense'
+              ? 'border-b-[4px] border-[var(--offenseRec)] text-[var(--offenseRec)] lg:border-b-[7px]'
+              : 'border-b-[2px] border-[var(--color-border)] text-[var(--color-text)]',
+          )}
+          onClick={() => onSelect('offense')}
+        >
+
+```
+
+cn을 사용하면 조건부 스타일을 처리할 수 있다는 clsx의 장점과 중복 스타일을 자동으로 병합해주는 twMerge의 장점을 모두 사용해서 가독성과 안정성을 모두 고려한 스타일을 작성할 수 있다.
+
+| 방식                    | 렌더링 성능  | 실행 비용    | 중복 제거 | 실수 방지           | 유지보수       | 최종 평가             |
+| ----------------------- | ------------ | ------------ | --------- | ------------------- | -------------- | --------------------- |
+| **clsx만 사용**         | ✅ 매우 빠름 | ✅ 낮음      | ❌ 안 됨  | ❌ 중복 스타일 주의 | ⚠️ 조건부만 OK | 🟡 가볍지만 실수 유발 |
+| **clsx + twMerge**      | ✅ 빠름      | ⚠️ 약간 높음 | ✅ 완벽   | ✅ 깔끔             | ✅ 안전        | 🟢 실용성 우수        |
+| **cn (clsx + twMerge)** | ✅ 빠름      | ⚠️ 약간 높음 | ✅ 완벽   | ✅ 유지보수 쉬움    | ✅ 최적화 구조 | 🟢 추천 방식          |
+
+요런 식으로 정리가 가능한데, clsx만 사용하는 경우 보다 cn (clsx+twMerge)를 같이 사용할 경우 약간의 리소스가 더 사용되긴 하지만, 1,000개의 컴포넌트를 한꺼번에 사용하는게 아닌 이상 무시해도 될 정도로 미미하다고 한다.

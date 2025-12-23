@@ -1,0 +1,354 @@
+---
+title: 'MDN 번역 기여 및 PR후 Lint 이슈 해결 + 머지 성공!'
+date: '2024. 9. 4.'
+tags: ['OpenSource', 'Translation']
+topics: ['TIL']
+draft: false
+summary: 'MDN 번역 성공!'
+toc: true
+---
+
+최초 작성: 2024. 9. 4. [notion blog](https://www.notion.so/yheedev/MDN-PR-Lint-0ff12932241642ea8c3b87deacb4d415)
+
+<hr className="invisible mt-1" />
+
+# 1. 번역 환경 세팅
+
+mdn 깃허브 계정의 `content`, `translated-content` 저장소를 로컬에 clone해오는 과정이 필요하다.
+
+- [https://github.com/mdn/content](https://github.com/mdn/content)
+- [https://github.com/mdn/translated-content](https://github.com/mdn/translated-content)
+
+<hr className="invisible mt-1" />
+
+1. 터미널을 켜서 아래 명령어를 실행했다.
+   장소들을 clone 할 위치로 이동한 다음에 mdn의 `content` 저장소를 clone 했다.
+
+```
+git clone <https://github.com/mdn/content>
+```
+
+<hr className="invisible mt-1" />
+
+2. [https://github.com/mdn/translated-content](https://github.com/mdn/translated-content) 링크에 접속해서 fork 클릭 -> 직접 내 저장소에 fork를 한다.
+
+그러면 [https://github.com/stillcorners/translated-content](https://github.com/stillcorners/translated-content) 와 같이 내 깃허브 저장소에 fork가 완료됨.
+
+여기서 fork를 하는건 내가 MDN 저장소에 접근할 권한이 없기 때문이다. 그래서 가장 먼저 MDN 저장소의 사본을 내 깃허브에 생성해두는 과정이 먼저 필요하다. 이렇게 생성된 MDN 저장소 사본에서 내가 번역을 한 뒤에 PR을 보내면 MDN 저장소에 권한을 갖고 있는 분이 PR 확인 후에 merge를 할 수 있다.
+
+<hr className="invisible mt-1" />
+
+3. 터미널에서 아래 명령어를 실행한다.
+
+```
+git clone <https://github.com/{깃허브아이디}/translated-content>
+
+git clone <https://github.com/stillcorners/translated-content> // 예시
+```
+
+<hr className="invisible mt-1" />
+
+4. content 폴더로 이동해서 yarn을 설치해준다.
+
+```
+cd content
+yarn install
+code .
+yarn start
+```
+
+<hr className="invisible mt-1" />
+
+이 때 폴더 구조는 다음과 같고, IDE에서는 최상위 폴더 위치 상태였다.
+
+```
+.
+  - content
+  - translated-content
+  package.json
+  ...
+```
+
+<hr className="invisible mt-1" />
+
+5. content 폴더로 이동해서 아래 명령어를 한 줄씩 차례대로 입력해준다. 그러면 최상위 위치에서 `.env` 파일이 생성된다.
+
+```
+CONTENT_TRANSLATED_ROOT=translated-content/files
+EDITOR=code
+```
+
+<hr className="invisible mt-1" />
+
+# 2. 번역할 문서 고르기
+
+mdn 번역은 번역되어있지 않은 문서를 **신규로 번역**하는 것, 그리고 번역되어있지만 최신 문서와 동기화되지 않았다면 **최신화하고** 번역하는 것이 있다. 그 외에는 코드나 오타를 수정하는 등 다양한 기여도 있었다.
+나는 신규 번역을 해보기로 했다. 생각보다 아직 번역되지 않은 문서들과 작성된지 얼마 안된 문서들이 꽤 많았었다.
+
+번역할 문서를 찾기 위해서 mdn/content 저장소의 `files` 파일 내에서 내가 번역하고자 하는 문서들을 둘러보는게 필요하다.
+
+또, [https://github.com/mdn/translated-content/pulls](https://github.com/mdn/translated-content/pulls) 이 링크에서 내가 번역하기로 선택한 문서가 작업중인지 확인하는게 필요하다.
+
+나는 `web`-`css`-`layout-cookbook`-`Center an element` 위치에 있는 [`Center an element`](https://developer.mozilla.org/en-US/docs/Web/CSS/Layout_cookbook/Center_an_element) 글을 번역하고 싶었다. 시작하기 조금 난감했는데`translated-content/kr/web/css` 폴더에는 `layout-cookbook` 폴더가 아예 생성되어있지 않았다. 즉 `layout-cookbook`섹션에 대한 한국어 번역이 아예 없던 것이다. 내가 처음 손을 대도 괜찮을까 고민을 하다가 `layout-cookbook` 폴더, `Center an element` 폴더, `index.md` 를 새로 생성해서 시작해보았다.
+
+<hr className="invisible mt-1" />
+
+# 3. 번역 안내서 숙지
+
+번역하기 전에 아래 안내서를 숙지하고 작업하는게 필요하다.
+
+번역 안내서를 보면서 ‘flexbox’는 ‘플렉스박스’로, ‘Requirement’는 ‘안내 사항’으로 번역 해야 하는 것을 알 수 있었다. 이렇게 문서에서 자주 등장하는 용어 중에서는 번역에 대한 표준이 마련되어 있었고 이에 맞춰서 번역을 진행해야 했다. 또한, 기존의 영어 문서에서는 영어 mdn 문서로 연결되는 링크를 한글 mdn 문서로 연결되게끔 수정하는 것도 중요했다.
+
+- **한국어 안내서**: [https://github.com/mdn/translated-content/blob/main/docs/ko/README.md](https://github.com/mdn/translated-content/blob/main/docs/ko/README.md)
+- **번역 안내서**: [https://github.com/mdn/translated-content/blob/main/docs/ko/guides/translation-guide.md](https://github.com/mdn/translated-content/blob/main/docs/ko/guides/translation-guide.md)
+- **용어 안내서**: [https://github.com/mdn/translated-content/blob/main/docs/ko/guides/glossary-guide.md](https://github.com/mdn/translated-content/blob/main/docs/ko/guides/glossary-guide.md)
+- **marco 안내서**: [https://github.com/mdn/translated-content/blob/main/docs/ko/guides/macro-guide.md](https://github.com/mdn/translated-content/blob/main/docs/ko/guides/macro-guide.md)
+
+<hr className="invisible mt-1" />
+
+# 4. push, PR 하기
+
+내 경우에는 아래와 같이 진행했다. 처음부터 브랜치를 생성하고 시작하는 분들도 많은 것 같은데.. 내 경우엔 분량이 적어서 그냥 번역을 끝내고 add 전에 브랜치를 생성했다.
+
+최상위 위치에서 translated-content 로 이동 → 브랜치 생성 → 번역할 파일 하나만 선택해서 add → 메세지 작성과 함께 커밋 → push
+
+```
+cd translated-content
+git checkout -b '브랜치 이름'
+git add 'files/ko/web/css/layout_cookbook/center_an_element/index.md'
+git commit -m 'ko\\web\\css\\layout_cookbook\\Center an element 번역'
+git push origin 브랜치 이름
+```
+
+이제 mdn/translated-content 저장소에 가면 pull request 할 수 있는 버튼을 클릭해주면 된다. 아 부담스러워;;;;;;;
+
+<hr className="invisible mt-1" />
+
+![PR 보내기 직전;](/static/images/til/mdn-1.png)
+
+제목 작성에 대한 규칙이 있다고 하던데 다른 사람들이 PR 보낸 것들을 참고해보니 `[ko] ‘작업한 문서’ 신규 번역` 과 같이 작성하면 되는 것 같다,,
+
+내용은 제목과 같이 `* ‘작업한 문서’ 신규 번역` 이라고만 작성해도 되고, 리뷰어가 참고할 사항이 있으면 Additional details를 선택적으로 작성해도 되는 것 같다.
+
+![PR 내용](/static/images/til/mdn-2.png)
+
+ㅎㅏ… 조리법 물어볼 때가 아니였는데 깝깝하다
+
+<hr className="invisible mt-1" />
+
+![화면 캡처 2024-09-04 212234.png](/static/images/til/mdn-3.png)
+![화면 캡처 2024-09-04 212223.png](/static/images/til/mdn-4.png)
+
+이것들은 PR 후 1~2분 내에 바로 달린 것들인데 봇이였음..
+
+링크를 수정해주고 내가 작성했던 번역 md 파일에 있던 `page-type: guide` 부분을 삭제하고,, pr 하고 나니까 번역한 글에서 수정하고 싶은 부분이 생겨서 번역도 열심히 수정하고 다시 push 했다
+
+<hr className="invisible mt-1" />
+
+# **5. Lint and review content files 에러 해결**
+
+![화면 캡처 2024-09-04 235127.png](/static/images/til/mdn-5.png)
+
+push를 다시 하고 나니까 Lint 관련 에러만 남았다
+
+![화면 캡처 2024-09-05 035724.png](/static/images/til/mdn-6.png)
+`exit code 1` 은 그 익숙한 yarn 설치할 때 본 에러 같기도 하고 ㅎㅎ ㅋㅋ아~!!
+
+<hr className="invisible mt-1" />
+
+## 사실 yarn install을 실패했었습니다
+
+사실은 세팅을 하다가 `yarn install` 을 하려다가 실패했다,, 아래는 그 이전에 `yarn install`을 실행하기 위해 뻘짓을 했던 것들 중 일부에 해당한다
+
+```
+yarn upgrade react
+
+npm install -g yarn
+
+npm i --ignore-script
+
+yarn add 'react@>=16.8' '@types/react@>=18' 'react@>=18' 'react@^0.14.0 || ^15.0.0 || ^16 || ^17 || ^18' 'react-dom@^0.14.0 || ^15.0.0 || ^16
+|| ^17 || ^18' '@codemirror/view@^6.0.0'
+
+rm -rf node_modules
+rm package-lock.json
+yarn update
+yarn install
+```
+
+`has unmet peer dependency` 에러가 발생하기도 했고,, 그 에러에서 본 의존성 라이브러리 중 하나인 `pngquant` 를 직접 설치해보기도 했다 (답이 아니였음)
+
+이 명령어들을 사용하면서 몇 시간 삽질을 했지만 md 파일 하나 번역하기 위해 내가 이 시간을 태우는게 맞나? mdn 문서를 번역하기 위한 최소한의 자격이 이 에러를 해결하는 것인가? 별의별 생각을 했었던 것 같다
+
+근데 뭐 걍 해야지.. 다시 yarn install을 하러 돌아갔다,,,,,,,, 번역이 별로여서 거절(이런 개념이 있습니까?)되는건 이해를 해도 Lint 이슈로 리뷰도 못하는건 너무 싫을 것 같았기 때문이다
+
+<hr className="invisible mt-1" />
+
+## lint 이슈 해결을 위한 yarn install, yarn start 과정
+
+사실 이 과정에서 정말 이런저런 방법들을 많이 시도했기 때문에 이 방법이 아주 정확한!!!; 방법은 아닐 것 같다.. 하지만 적어도 나의 환경에서는 성공했기 때문에 또 MDN 기여를 할 미래의 나를 위해 기록해본다
+
+이런 에러가 떠서,,, 파이썬을 다운로드 받아보았다 공식 홈페이지에 접속해서 윈도우 운영체제에 맞는 파이썬 프로그램을 다운로드 받고 실행했던 것으로 기억한다
+
+```scss
+gyp ERR! stack at PythonFinder.fail (C:\Users\heeeun\hee\mdn\translated-content\node_modules\node-gyp\lib\find-python.js:306:11)
+gyp ERR! stack at PythonFinder.findPython (C:\Users\heeeun\hee\mdn\translated-content\node_modules\node-gyp\lib\find-python.js:164:17)
+gyp ERR! stack at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+```
+
+1. npm을 다운그레이드 한다.
+
+왜냐하면 `npm python` 명령어를 사용해야하는데 이 명령어는 최신 버전에서는 지원하지 않는 명령어라고 나오기 때문에,,,
+
+```scss
+npm install -g npm@^8
+```
+
+2. 파이썬을 다운로드 받는다
+
+3. 바탕화면에서 실행한 터미널에서 `where python` 명령어를 실행하고 python의 위치를 찾는다. 나는 `"C:\\Users\\heeeun\\AppData\\Local\\Programs\\Python\\Python312\\python.exe"` 였다.
+
+4. 파이썬 환경 변수를 지정한다.
+
+제어판에서 환경변수 검색 → 시스템 속성 클릭 → 고급 시스템 설정 클릭 → 환경 변수 클릭 → 시스템 변수에서 새로 만들기 클릭 → 변수 이름  `PYTHON`으로 설정하고, 변수 값을 Python 실행 파일의 경로로 설정
+
+그 다음에 터미널과 IDE 재시작하면 환경 변수에 대한 변경 사항이 적용됨. 그래서 IDE 터미널에서 `where python` 명령어 사용 가능해졌다
+
+5. node-gyp 설치
+
+```scss
+npm install -g node-gyp
+```
+
+6. translated-content 위치에서 아래 명령어 실행. 맨 끝이 폴더 이름이 아닌 `python.exe`로 끝나야 함.
+
+```scss
+npm config set python "C:\\Users\\heeeun\\AppData\\Local\\Programs\\Python\\Python312\\python.exe
+```
+
+7. 이젠 이런 에러가 떠서 visual studio를 다운로드 받았다,,
+
+```scss
+gyp ERR! stack at VisualStudioFinder.fail (C:\Users\heeeun\hee\mdn\translated-content\node_modules\node-gyp\lib\find-visualstudio.js:118:11)
+gyp ERR! stack at VisualStudioFinder.findVisualStudio (C:\Users\heeeun\hee\mdn\translated-content\node_modules\node-gyp\lib\find-visualstudio.js:74:17)
+gyp ERR! stack at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+```
+
+이 때 visual stuido 다운로드할 때 Desktop development with C++ 워크로드를 꼭 함께 설치한다. 그리고 Desktop development with C++ 내부의 모든 옵션 체크해서 설치한다 (`"MSVC v143 - VS 2022 C++ x64/x86 build tools"` 이런 것들도 꼭!)
+
+8. npm 설정에 Visual Studio 버전 추가하는 명령어를 실행한다
+
+```bash
+npm config set msvs_version 2022
+```
+
+9. 이제 `yarn install` 실행은 가능!!
+
+```bash
+heeeun@DESKTOP-48B6STH MINGW64 ~/hee/mdn/translated-content (yheedev)
+$ yarn install
+➤ YN0000: · Yarn 4.4.1
+➤ YN0000: ┌ Resolution step
+➤ YN0000: └ Completed in 0s 241ms
+➤ YN0000: ┌ Fetch step
+➤ YN0007: │ cld@npm:2.10.0 must be built because it never has been before or the last one failed
+➤ YN0009: │ cld@npm:2.10.0 couldn't be built successfully (exit code 1, logs can be found here: C:\\Users\\heeeun\\AppData\\Local\\Temp\\xfs-d518f62a\\build.log)
+➤ YN0000: └ Completed in 1m 5s
+➤ YN0000: · Failed with errors in 1m 11s
+```
+
+10. 그치만 `yarn start`는 아래 에러가 뜨면서 실행이 되지 않음,,
+
+```bash
+heeeun@DESKTOP-48B6STH MINGW64 ~/hee/mdn/translated-content (yheedev)
+$ yarn start
+Usage Error: Couldn't find a script named "start".
+
+$ yarn run [--inspect] [--inspect-brk] [-T,--top-level] [-B,--binaries-only] [--require #0] <scriptName> ...
+```
+
+`translated-content/package.json` 에 아래 내용을 추가해준다. 아예 이 package.json에 `start` 에 대한 내용이 누락되어있었다.
+
+```bash
+"scripts": {
+	"start": "node ./scripts/check-url-locale.js",
+}
+```
+
+이제 `yarn start` 가 실행된다ㅠ
+
+```bash
+$ yarn start
+Checked all files successfully!
+```
+
+이제 [http://localhost:5042/ko](http://localhost:5042/ko) 링크에 접속 가능해짐,,, 아 힘겨웠다
+
+이 많은걸 설치하면서 많은 변경사항이 생겼다
+
+도대체 어떤걸,, add 해야하는지 고민이 있었는데 일단 내가 번역한 문서만 add 해보았다
+
+```bash
+$ git add 'files/ko/web/css/layout_cookbook/center_an_element/index.md'
+$ git commit -m 'lint 이슈 해결'
+✔ Preparing lint-staged...
+✔ Running tasks for staged files...
+✔ Applying modifications from tasks...
+✔ Cleaning up temporary files...
+[yheedev 7c5e62d9de] lint 이슈 해결
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+ git push origin yheedev
+Enumerating objects: 17, done.
+Counting objects: 100% (17/17), done.
+Delta compression using up to 4 threads
+Compressing objects: 100% (7/7), done.
+Writing objects: 100% (9/9), 671 bytes | 134.00 KiB/s, done.
+Total 9 (delta 6), reused 0 (delta 0), pack-reused 0 (from 0)
+remote: Resolving deltas: 100% (6/6), completed with 6 local objects.
+To https://github.com/stillcorners/translated-content
+   c9657207e9..7c5e62d9de  yheedev -> yheedev
+```
+
+ㅠㅠ 정답이였잖야
+
+<hr className="invisible mt-1" />
+
+## lint 이슈 해결 완료
+
+![화면 캡처 2024-09-05 053936.png](/static/images/til/mdn-7.png)
+
+lint 이슈 진짜 해결.. 진짜 성공
+
+![화면 캡처 2024-09-05 054456.png](/static/images/til/mdn-8.png)
+이젠 탭에서 빨간 X가 나오지도 않아요……… 즐겁다~
+
+리뷰 후 수정하겠음,, 아마 소스커밋 추가하라는 수정사항 리뷰가 올 것 같다
+
+<hr className="invisible mt-1" />
+
+# 6. 리뷰 완료!
+
+9/4에 첫 PR을 보냈었고, 9/29에 리뷰가 달렸다.
+
+[https://github.com/mdn/translated-content/pull/23378](https://github.com/mdn/translated-content/pull/23378)
+
+![화면 캡처 2024-10-03 023109.png](/static/images/til/mdn-9.png)
+
+![화면 캡처 2024-10-03 023940.png](/static/images/til/mdn-10.png)
+리뷰어 분들은 기여한 내용을 직접 읽어보고 수정도 하고 머지하기 때문에 좀 오래 걸릴 수 있는 듯..
+
+그리고 다음에 번역한다면 해시 커밋을 꼭! 추가해야겠다
+
+큰 기대를 안 했지만 정말 좋은 경험이였다. 특히 Lint 이슈를 고치는 과정에서 많은걸 배울 수 있었다,, npm만 사용해서 몰랐는데 yarn을 사용하려면 visual studio를 사용하고 파이썬을 다운로드 받아야했다니,,
+
+아래 MDN 문서는 내가 번역한 글이다. 이렇게 보니 또 그럴싸하고 또 번역하고 싶어지는군… 시간 날 때에 또 번역해보고 싶다.
+
+[요소의 중앙 정렬 - CSS: Cascading Style Sheets | MDN](https://developer.mozilla.org/ko/docs/Web/CSS/Layout_cookbook/Center_an_element)
+
+### 참고
+
+- [https://github.com/mdn/translated-content/blob/main/CONTRIBUTING.md](https://github.com/mdn/translated-content/blob/main/CONTRIBUTING.md)
+- [https://github.com/mdn/translated-content/issues/827](https://github.com/mdn/translated-content/issues/827)
+- [https://miryang.dev/blog/how-to-contribute-to-mdn](https://miryang.dev/blog/how-to-contribute-to-mdn)
+- [https://dawonny.tistory.com/m/469](https://dawonny.tistory.com/m/469)

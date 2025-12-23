@@ -12,6 +12,7 @@ export const TOPICS = [
   'Debugging',
   'Infra',
   'TIL',
+  'FE Study',
 ] as const
 
 export const TAGS = [

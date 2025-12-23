@@ -1,0 +1,257 @@
+---
+title: '클라이언트와 서버 상태를 나눠서 관리해야하는 이유, TanStack Query의 동작 방식과 특징'
+date: '2024-11-22'
+tags: ['React Query']
+topics: ['TIL']
+draft: false
+summary: ''
+toc: true
+---
+
+최초 작성: 2024. 11. 22. [notion blog](https://www.notion.so/yheedev/TanStack-Query-146c7639cb4980f58a96c1451a11e59e)
+
+현재 진행 중인 팀 프로젝트에서 api를 요청할 일이 많아서 Tanstack query 라이브러리를 추가로 채택했다. 그래서 Tanstack query 공식 문서 번역 글과 다른 블로그 번역 글을 읽고 공부해보고 정리해보았다.
+
+[React Query의 실용적인 활용 - 함께 읽는 React Query 공식 문서](https://www.codingmax.net/courses/ko-react-query/section01/lec0001)
+
+[TanStack Query(React Query) 핵심 정리](https://www.heropy.dev/p/HZaKIE)
+
+<hr className="invisible mt-1" />
+
+# 1. 클라이언트 상태 vs 서버 상태
+
+## 1.1 클라이언트 상태와 서버 상태의 예시
+
+- **클라이언트 상태**
+  - 애플리케이션의 UI 및 동작에 필요한 데이터(예: 모달 열림/닫힘 상태, 사용자가 입력한 input 값 등)
+  - 사용자가 조작하거나 브라우저의 메모리 (로컬 스토리지, 세션, 쿠키 등)에만 존재하는 임시적인 데이터에는 Zustand 같은 경량 상태 관리 라이브러리가 적합하다.
+
+- **서버 상태**
+  - 서버에서 API 요청을 한 뒤에 응답을 받아와서 렌더링 하거나 작업에 필요한 데이터(ex: 실시간 영화 상영 시간 정보, 문의 게시글 등)
+    - 서버에서 원본 데이터를 소유하며, 클라이언트는 이 데이터를 **소유하지 않고 단지 소비**한다.
+  - 서버 상태는 **비동기 데이터, 실시간 업데이트, 캐싱, 동기화, 오류 재시도** 등 관리 요소가 복잡하므로 TanStack Query 같은 라이브러리가 적합하다.
+
+<hr className="invisible mt-1" />
+
+## 1.2. 클라이언트 상태와 서버 상태를 분담해서 관리하는 것이 좋다
+
+- 기존에는 클라이언트에서 axios 등을 사용해서 서버 데이터를 가져온 후, 해당 데이터를 애플리케이션 전체에서 사용할 수 있게 만드는 추가적인 방법이 필요했다.
+- Redux의 경우, 서버 데이터를 가져온 후 클라이언트 어디서든 전역적으로 사용할 수 있었다.
+  → 이러한 접근 방식은 클라이언트에서 서버 상태를 클라이언트의 상태를 **같은 방식**으로 다룬다.
+- 하지만 애플리케이션은 원본 서버 상태 및 데이터를 소유하지 않는다. 서버 상태 (ex: 영화의 상영 정보)는 서버가 소유하고 있기 때문이다.
+  - 클라이언트는 잠시 최신 상태를 애플리케이션에 렌더링하기 위해 잠시 서버 데이터를 클라이언트로 가져온 것 뿐이다.
+- 애플리케이션이 소유하지 않은 데이터를 표시하기 위해 캐시를 활용할 수 있다면, 전체 앱에서 사용해야 하는 클라이언트 상태는 그리 많지 않을 것이다.
+  - 서버 상태 (ex: 영화의 상영 정보)와 같은 데이터를 표시하기 위해 캐시에서 반환하는게 더 안정적으로 서버 상태를 가져올 수 있는 방향이다.
+  - 서버 상태를 효율적으로 캐싱하고 동기화하는 쪽으로 초점을 맞추면 **클라이언트의 상태 관리가 줄어들고 서버 상태 관리의 필요성이 증가할 것이다.**
+
+<hr className="invisible mt-1" />
+
+나의 경우 클라이언트 라이브러리는 Zustand를 사용하고 있어서, 이 기준으로 정리해보았다.
+
+- **Zustand**는 클라이언트의 UI 상태를 관리하고 처리하는 데에 적합하다.
+- 반면에 **TanStack Query**는 비동기 서버 데이터를 효과적으로 가져오고 캐싱하며, 에러 핸들링, 동기화를 자동화한다.
+- 클라이언트 상태와 서버 상태의 성격이 다르기 때문에, **둘을 동일한 방식으로 관리하면 코드 복잡도와 유지보수 비용이 증가**한다.
+  서버 상태는 **캐싱 및 동기화**가 중요하고, 클라이언트 상태는 **UI 로직**에 더 가깝다.
+- 상태를 나누면 클라이언트 상태는 가볍게 유지하고, 서버 상태는 효율적으로 관리할 수 있다.
+
+요약하자면, Zustand와 TansTack Query 각자의 라이브러리가 잘하는 영역이 분명하기 때문에, 두 라이브러리를 함께 사용해서 각각 클라이언트, 서버 상태를 관리하는 것이 효율적이다.
+
+<hr className="invisible mt-1" />
+
+## 1.3. Zustand도 서버 상태를 관리하거나 비동기 요청을 할 수 있지만..
+
+### 1.3.1. Zustand를 사용한 서버 상태 관리의 한계
+
+Zustand에서 서버 상태를 클라이언트 상태와 동일한 방식으로 관리하려면 다음과 같은 어려움이 존재한다.
+
+- **비동기 로직 중복**: 각 요청마다 비동기 처리 로직과 에러 핸들링을 구현해야 한다.
+- **캐싱 부재**: 데이터를 캐시하지 않으면 같은 데이터를 반복적으로 가져온다.
+- **데이터 동기화 어려움**: 서버와 클라이언트의 상태를 동기화하려면 추가적으로 로직을 작성해야한다.
+
+```jsx
+import create from "zustand";
+import axios from "axios";
+
+type Movie = {
+  id: number;
+  title: string;
+  director: string;
+};
+
+type MovieState = {
+  movies: Movie[];
+  isLoading: boolean;
+  error: string | null; // 로딩 상태와 에러 상태 타입 지정 필요
+  fetchMovies: () => Promise<void>; // 비동기 로직
+};
+
+const useMovieStore = create<MovieState>((set) => ({
+  movies: [],
+  isLoading: false,
+  error: null,
+  fetchMovies: async () => {
+    set({ isLoading: true, error: null }); // 로딩 시작
+    try {
+      const response = await axios.get<Movie[]>("https://api.example.com/movies");
+      set({ movies: response.data, isLoading: false });
+    } catch (error: any) {
+      set({ error: error.message, isLoading: false });
+    }
+  },
+}));
+
+export default useMovieStore;
+```
+
+위 코드의 예시에서는 영화 데이터를 서버에서 가져와 Zustand로 관리하는 상황을 가정한다.
+
+- `fetchMovies` 와 같은 비동기 로직이 중복되어서 이후에 작성하는 다른 상태를 관리할 때 각 비동기 요청마다 상태 변경(isLoading, error), 성공 처리, 에러 핸들링을 반복적으로 작성해야한다.
+- 캐싱 기능이 없기 때문에 클라이언트에서 서버로부터 데이터를 가져올 때마다 서버에 새로운 요청을 보내야한다. 동일한 데이터를 가져온다면 불필요한 요청으로 이어진다.
+- 예를 들어, 서버에서 영화 데이터가 새롭게 업데이트 되었을 경우, 클라이언트는 이를 자동으로 감지할 수 없다. 위에서 말했듯이 클라이언트는 서버 데이터의 주인이 아니기 때문이다!
+  - 데이터를 실시간으로 동기화하려면 별도의 polling 로직이나 WebSock 기술 구현 필요
+
+---
+
+<hr className="invisible mt-1" />
+
+### TanStack Query를 통해 더 쉽게 서버 상태 관리를 할 수 있다
+
+반면에 TanStack Query의 서버 상태를 관리하면 Zustand에서 서버 상태를 관리할 때보다 좀 더 편한 기능들을 다수 제공한다.
+
+- **자동 캐싱**: 동일한 요청을 여러 컴포넌트에서 사용할 때 중복 호출 없이 데이터를 캐시에서 가져온다.
+- **자동 갱신**: 데이터가 오래되었거나 네트워크 상태 변화가 감지되면 자동으로 갱신한다.
+- **에러 핸들링 및 재시도**: 서버 요청 실패 시 재시도 로직이 내장되어있다.
+- **데이터 동기화**: 브라우저 포커스가 변경되거나 (탭 이동 등), 네트워크가 다시 연결되면 최신 데이터를 가져온다.
+
+```jsx
+import { useQuery } from "@tanstack/react-query";
+import axios from "axios";
+
+type Movie = {
+  id: number;
+  title: string;
+  director: string;
+};
+
+const fetchMovies = async (): Promise<Movie[]> => {
+  const response = await axios.get<Movie[]>("https://api.example.com/movies");
+  return response.data;
+};
+
+const useMovies = () => {
+  return useQuery(["movies"], fetchMovies, {
+    staleTime: 1000 * 60 * 5, // 5분간 데이터 캐싱
+    refetchOnWindowFocus: true, // 창 포커스 시 자동으로 데이터 갱신
+  });
+};
+
+export default useMovies;
+```
+
+방금 전 Zustand를 사용해서 서버 상태를 관리했을 때의 코드를 TanStack Query로 바꿔서 작성한 예시이다.
+
+- 비동기 로직이 중복되던 문제가 개선되었다.
+  - 기존에 Zustand를 사용했을 떄에는 try catch 문을 사용해서 로딩 상태, 에러 핸들링을 작성했었는데, 개선된 코드에서는 useQuery를 사용해서 그것들을 자동으로 처리한다. 다른 서버 상태도 동일한 패턴으로 처리할 수 있다.
+- 캐싱 기능을 제공하며, staleTime 옵션을 설정해서 데이터를 캐싱할 시간을 설정할 수 있다. 이를 통해 요청을 최소화할 수 있다.
+- 내부적으로 다양한 데이터 관리 메커니즘과 동작 방식을 사용하기 때문에 별도의 동기화 로직을 작성하지 않아도 서버와의 데이터 일관성이 유지된다.
+  - `refetchOnWindowFocus`와 같은 옵션으로 브라우저 포커스 변경, 네트워크 복구 시 최신 데이터를 자동으로 가져올 수 있다. 그 외에 `refetchOnReconnect`, `refetchInterval` 등이 있다.
+  - 자동 갱신, 캐싱, 데이터 재검증, 상태 동기화, 에러 핸들링, 최적화된 네트워크 요청 처리를 통해 서버 데이터와 클라이언트 상태 간의 일관성을 보장한다.
+
+<hr className="invisible mt-1" />
+
+# 2. Tanstack Query의 특징, 장점과 단점
+
+## 2.1. 특징
+
+Tanstack Query는 React Query라는 이름으로 시작했지만, 4버전 부터 Vue, Svelte 등의 다른 프레임워크에서도 활용할 수 있도록 기능이 확장되며 TanStack Query라는 이름으로 변경되었다.
+
+글 작성 중인 2024년 11월 25일 기준 현재는 5.61.3 버전이 가장 최신 버전이다. 대략 1~2년 전 쯤에는 React Query라는 명칭을 가졌던 것 같다.
+
+[npm: @tanstack/react-query](https://www.npmjs.com/package/@tanstack/react-query)
+
+<hr className="invisible mt-1" />
+
+## 2.2. 장단점
+
+장점
+
+- 데이터 가져오기 및 캐싱을 통한 동일 요청의 중복 제거
+- 최신 데이터 유지, 빠른 속도를 통한 뛰어난 사용자 경험 제공
+- 무한 스크롤, 페이지네이션 등의 성능 최적화
+- 네트워크 재연결, 요청 실패 등의 자동 갱신
+- Promise를 반환하는 어떤 함수와도 작동
+- 매우 유연하여 기본 설정으로 충분하지 않을 때 다양한 설정을 커스터마이즈 가능
+- 서버로부터 데이터 가져오기, 데이터 캐싱, 캐시 제어 등 데이터를 쉽고 효율적으로 관리할 수 있는 라이브러리
+
+단점
+
+- 러닝 커브: 데이터를 구분하고 캐싱을 하기 위한 query key 설계 및 mutation 관리, 쿼리 무효화 등 고급 기능을 익히는 데에 시간이 걸릴 수 있다.
+- mutation은 비동기 요청을 다루는 데에 적합하지만 mutation 간의 의존성을 관리하는 데에 많은 작업이 필요할 수 있다. 프로젝트의 규모와 요구사항에 따라 tanstack query가 꼭 필요한지 고민하고 선택하는게 필요하다.
+- 서버 상태에 특화되어있어서 클라이언트 상태 관리는 적합하지 않다. → Zustand, Redux 같은 상태 관리 라이브러리를 같이 사용해주는 것이 좋다.
+
+<hr className="invisible mt-1" />
+
+# 3. TanStack Query의 동작 (캐싱) 방식
+
+```tsx
+import { useQuery } from '@tanstack/react-query'
+
+export default function DelayedData() {
+  const { data } = useQuery({
+    queryKey: ['delay'],
+    queryFn: async () => (await fetch('<https://api.heropy.dev/v0/delay?t=1000>')).json(),
+  })
+  return <div>{JSON.stringify(data)}</div>
+}
+```
+
+![architecture](/static/images/til/architecture.jpg)
+
+출처: [https://developer.medley.jp/entry/2023/03/31/194059](https://developer.medley.jp/entry/2023/03/31/194059)
+
+<hr className="invisible mt-1" />
+
+## 3.1. Query Cache, Query Key, QueryClient
+
+- **`Query Key`**는 TanStack Query 코드에서 데이터를 고유하게 식별하기 위해 사용되는 키이다. 주로 배열 형태로 관리되며, 특정 리소스나 API 호출을 식별한다. (위 코드 예시의 `queryKey: ['delay'],`) ‘
+- TanStack Query의 내부에 있는 **`Query Cache`**라는 중앙 관리 공간에서는 캐싱된 데이터를 저장하고 관리하고, 조회하거나 무효화 작업을 할 수 있다.
+  - 리액트 컴포넌트에서 특정 데이터를 조회하는 요청이 발생하면 `useQuery` 훅을 사용해 쿼리 키를 기반으로 QueryCache를 확인한다.
+- **`QueryClient`**는 Query Cache를 관리하고, 앱 전역에서 Query Cache를 공유할 수 있도록 한다. QueryClient는 TanStack Query의 핵심 객체로, Query Cache 뿐 아니라 Mutation Cache를 관리한다.
+  - `QueryClient`와 `QueryClientProvider`**:** `QueryClient`는 `QueryCache`를 관리하며, `QueryClientProvider`를 통해 애플리케이션의 루트 레벨에 제공된다. 이는 모든 하위 컴포넌트가 동일한 캐시에 접근할 수 있도록 한다.
+
+<hr className="invisible mt-1" />
+
+## 3.2. 캐시가 실제로 저장되는 곳
+
+- TanStack Query의 캐시는 기본적으로 클라이언트 측 메모리에 저장된다. 이는 브라우저의 메모리(RAM)를 의미하며, 애플리케이션이 실행되는 동안 데이터가 유지된다. 그래서 페이지를 새로 고침하거나 애플리케이션을 닫으면 캐시는 사라진다.
+- 하지만 `@tanstack/react-query-persist-client`  와 같은 라이브러리를 사용하면 캐시 데이터를 로컬 스토리지 또는 세션 스토리지 등에 저장할 수 있다.
+
+<hr className="invisible mt-1" />
+
+## 3.3. Query Cache에 데이터가 없는 경우
+
+- Query Cache에 데이터가 없는 경우
+  - API 요청: useQuery를 호출했을 때 Query Key와 일치하는 데이터가 Query Cache에 없으면 TanStack Query는 서버에 데이터를 요청한다.
+  - 서버에서 데이터를 성공적으로 받아오면 해당 데이터를 Query Cache에 저장이 가능해진다.
+  - 저장된 데이터는 쿼리 키와 연결되며, 이후 이 쿼리 키로 데이터를 다시 요청하면 캐시된 데이터를 사용할 수 있게된다.
+
+<hr className="invisible mt-1" />
+
+## 3.4. Query Cache에 데이터가 있는 경우
+
+- Query Cache에서 데이터를 조회한다.
+  - 쿼리 캐시에서 쿼리 키와 일치하는 데이터가 있으면 해당 데이터를 컴포넌트에 즉시 반환한다.
+  - 이후 동일한 요청이 필요할 경우 추가로 요청을 하지 않고 캐싱된 데이터를 가져오기 때문에 빠른 사용자 경험을 제공할 수 있다.
+- Stale Data 판단
+  - 데이터를 바로 반환하지만, 캐싱된 데이터가 오래되었는지(isStale 상태) 확인한다.
+  - 데이터가 stale (신선하지 않은) 상태라면, 백그라운드에서 서버에 API 요청을 보내서 최신 데이터를 갱신해서 가져온다. (refetch)
+    - 데이터를 갱신해서 다시 가져오는 과정에서 새 데이터를 가져오는 컴포넌트에서는 리렌더링이 이뤄진다. (UI 업데이트)
+
+<hr className="invisible mt-1" />
+
+요약
+
+- 캐시에 데이터가 있으면: **QueryCache → React Component**
+- 캐시에 데이터가 없으면: **API 요청 → QueryCache 업데이트 → React Component**
+
+다음 포스트에서 설치해서 사용해보는 내용으로 작성 예정!

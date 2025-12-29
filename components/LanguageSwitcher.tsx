@@ -3,6 +3,7 @@
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useMemo, useState } from 'react'
 import { LANGS, LANG_LABELS, type Lang } from '@/lib/types'
+import { Globe } from 'lucide-react'
 
 function replaceLang(pathname: string, nextLang: string) {
   // 예) /ko/blog/new → /en/blog/new
@@ -34,11 +35,15 @@ export default function LanguageSwitcher() {
     <div className="relative">
       <button
         onClick={() => setOpen((s) => !s)}
-        className="hover:text-primary-500 dark:hover:text-primary-400 rounded px-3 py-1 text-sm font-medium"
+        className="hover:text-primary-500 dark:hover:text-primary-400 flex items-center gap-1.5 rounded px-2 py-1 text-sm font-medium"
         aria-haspopup="menu"
         aria-expanded={open}
+        aria-label={`Change language (current: ${LANG_LABELS[currentLang as Lang] ?? LANG_LABELS.ko})`}
       >
-        {LANG_LABELS[currentLang as Lang] ?? LANG_LABELS.ko}
+        <Globe className="h-5 w-5" />
+        <span className="hidden sm:inline">
+          {LANG_LABELS[currentLang as Lang] ?? LANG_LABELS.ko}
+        </span>
       </button>
 
       {open && (

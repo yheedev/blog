@@ -3,6 +3,7 @@
 import React from 'react'
 import Slugger from 'github-slugger'
 import clsx from 'clsx'
+import { ChevronUp, ChevronDown } from 'lucide-react'
 
 type TOCItem = { id: string; text: string; depth: number }
 
@@ -93,18 +94,19 @@ export default function TOCSidebar({
 
   // --- 렌더
   return (
-    <aside className={clsx('hidden xl:block xl:self-start')}>
-      <div className="sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto pl-4">
+    <aside className={clsx('xl:self-start', className)}>
+      <div className="xl:sticky xl:top-24 xl:max-h-[calc(100vh-7rem)] xl:overflow-y-auto xl:pl-4">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400">
             TOC
           </h2>
           <button
             onClick={toggle}
-            className="rounded-md border px-2 py-1 text-xs hover:bg-gray-50 dark:hover:bg-gray-800"
+            className="rounded-md border p-1.5 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800"
             aria-pressed={show}
+            aria-label={show ? 'Hide table of contents' : 'Show table of contents'}
           >
-            {show ? 'Hide' : 'Show'}
+            {show ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
           </button>
         </div>
 

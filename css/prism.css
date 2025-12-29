@@ -42,69 +42,65 @@
   content: attr(line);
 }
 
-/* Token styles */
+/* Token styles - Smoky Rose inspired (Rose Pine based) */
 /**
- * MIT License
- * Copyright (c) 2018 Sarah Drasner
- * Sarah Drasner's[@sdras] Night Owl
- * Ported by Sara vieria [@SaraVieira]
- * Added by Souvik Mandal [@SimpleIndian]
+ * Warm and muted color scheme that matches the Smoky Rose theme
  */
 .token.comment,
 .token.prolog,
 .token.cdata {
-  color: rgb(99, 119, 119);
+  color: #9893a5;
   font-style: italic;
 }
 
 .token.punctuation {
-  color: rgb(199, 146, 234);
+  color: #908caa;
 }
 
 .namespace {
-  color: rgb(178, 204, 214);
+  color: #c4a7e7;
 }
 
 .token.deleted {
-  color: rgba(239, 83, 80, 0.56);
+  color: #eb6f92;
   font-style: italic;
 }
 
 .token.symbol,
 .token.property {
-  color: rgb(128, 203, 196);
+  color: #9ccfd8;
 }
 
 .token.tag,
 .token.operator,
 .token.keyword {
-  color: rgb(127, 219, 202);
+  color: #ebbcba;
 }
 
 .token.boolean {
-  color: rgb(255, 88, 116);
+  color: #eb6f92;
 }
 
 .token.number {
-  color: rgb(247, 140, 108);
+  color: #f6c177;
 }
 
 .token.constant,
 .token.function,
 .token.builtin,
 .token.char {
-  color: rgb(130, 170, 255);
+  color: #c4a7e7;
 }
 
 .token.selector,
 .token.doctype {
-  color: rgb(199, 146, 234);
+  color: #c4a7e7;
   font-style: italic;
 }
 
 .token.attr-name,
 .token.inserted {
-  color: rgb(173, 219, 103);
+  color: #9ccfd8;
   font-style: italic;
 }
 
@@ -113,19 +109,19 @@
 .token.entity,
 .language-css .token.string,
 .style .token.string {
-  color: rgb(173, 219, 103);
+  color: #f6c177;
 }
 
 .token.class-name,
 .token.atrule,
 .token.attr-value {
-  color: rgb(255, 203, 139);
+  color: #ea9a97;
 }
 
 .token.regex,
 .token.important,
 .token.variable {
-  color: rgb(214, 222, 235);
+  color: #e0def4;
 }
 
 .token.important,

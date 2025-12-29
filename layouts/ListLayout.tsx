@@ -137,7 +137,7 @@ export default function ListLayout({
                           {title}
                         </Link>
                       </h3>
-                      <div className="flex flex-wrap">
+                      <div className="mt-1 flex flex-wrap">
                         {tags?.map((tag) => (
                           <Tag key={tag} text={tag} lang={lang} />
                         ))}

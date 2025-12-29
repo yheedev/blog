@@ -11,7 +11,8 @@ import { usePathname } from 'next/navigation'
 import { Suspense } from 'react'
 
 const Header = () => {
-  let headerClass = 'flex items-center w-full bg-white dark:bg-gray-950 justify-between py-10'
+  let headerClass =
+    'flex items-center w-full dark:bg-primary-950 bg-primary-100 justify-between py-10'
   if (siteMetadata.stickyNav) {
     headerClass += ' sticky top-0 z-50'
   }

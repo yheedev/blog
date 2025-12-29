@@ -8,34 +8,34 @@
 @theme {
   /* Font families */
   --font-sans:
-    var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
-    'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+    var(--font-spoqa), ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+    'Segoe UI Symbol', 'Noto Color Emoji';
 
-  /* Colors */
-  /* Copied from https://tailwindcss.com/docs/theme#default-theme-variable-reference */
-  --color-primary-50: oklch(0.971 0.014 343.198);
-  --color-primary-100: oklch(0.948 0.028 342.258);
-  --color-primary-200: oklch(0.899 0.061 343.231);
-  --color-primary-300: oklch(0.823 0.12 346.018);
-  --color-primary-400: oklch(0.718 0.202 349.761);
-  --color-primary-500: oklch(0.656 0.241 354.308);
-  --color-primary-600: oklch(0.592 0.249 0.584);
-  --color-primary-700: oklch(0.525 0.223 3.958);
-  --color-primary-800: oklch(0.459 0.187 3.815);
-  --color-primary-900: oklch(0.408 0.153 2.432);
-  --color-primary-950: oklch(0.284 0.109 3.907);
+  /* Colors - Smoky Rose Theme */
+  --color-primary-50: #f4f1f1;
+  --color-primary-100: #e9e2e2;
+  --color-primary-200: #d2c6c6;
+  --color-primary-300: #bca9a9;
+  --color-primary-400: #a58d8d;
+  --color-primary-500: #8f7070;
+  --color-primary-600: #725a5a;
+  --color-primary-700: #564343;
+  --color-primary-800: #392d2d;
+  --color-primary-900: #1d1616;
+  --color-primary-950: #141010;
 
-  --color-gray-50: oklch(0.985 0.002 247.839);
-  --color-gray-100: oklch(0.967 0.003 264.542);
-  --color-gray-200: oklch(0.928 0.006 264.531);
-  --color-gray-300: oklch(0.872 0.01 258.338);
-  --color-gray-400: oklch(0.707 0.022 261.325);
-  --color-gray-500: oklch(0.551 0.027 264.364);
-  --color-gray-600: oklch(0.446 0.03 256.802);
-  --color-gray-700: oklch(0.373 0.034 259.733);
-  --color-gray-800: oklch(0.278 0.033 256.848);
-  --color-gray-900: oklch(0.21 0.034 264.665);
-  --color-gray-950: oklch(0.13 0.028 261.692);
+  /* Warm Gray - Smoky Rose 계열 */
+  --color-gray-50: #fafafa;
+  --color-gray-100: #f5f5f4;
+  --color-gray-200: #e7e5e4;
+  --color-gray-300: #d6d3d1;
+  --color-gray-400: #a8a29e;
+  --color-gray-500: #78716c;
+  --color-gray-600: #57534e;
+  --color-gray-700: #44403c;
+  --color-gray-800: #292524;
+  --color-gray-900: #1c1917;
+  --color-gray-950: #0c0a09;
 
   /* Line heights */
   --line-height-11: 2.75rem;
@@ -98,8 +98,8 @@
       font-weight: 600;
     }
     & :where(code):not(pre code) {
-      color: var(--color-gray-800);
-      background-color: var(--color-gray-100);
+      color: var(--color-primary-800);
+      background-color: var(--color-primary-50);
       padding: 0.125rem 0.375rem;
       border-radius: var(--radius);
       font-size: 0.875em;
@@ -121,8 +121,8 @@
       color: var(--color-gray-100);
     }
     & :where(code):not(pre code) {
-      color: var(--color-gray-300);
-      background-color: var(--color-gray-800);
+      color: var(--color-primary-200);
+      background-color: var(--color-primary-900);
       padding: 0.125rem 0.375rem;
       border-radius: var(--radius);
       font-size: 0.875em;

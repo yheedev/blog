@@ -4,6 +4,9 @@ import React from 'react'
 import Slugger from 'github-slugger'
 import clsx from 'clsx'
 import { ChevronUp, ChevronDown } from 'lucide-react'
+import { usePathname } from 'next/navigation'
+import { i18nLabels } from '@/data/i18n'
+import type { Lang } from '@/lib/types'
 
 type TOCItem = { id: string; text: string; depth: number }
 
@@ -30,6 +33,11 @@ export default function TOCSidebar({
   enabled, // 있으면 Controlled
   onToggle, // 있으면 Controlled
 }: Props) {
+  // --- 언어 감지
+  const pathname = usePathname()
+  const currentLang = (pathname?.split('/')[1] || 'ko') as Lang
+  const tocLabel = i18nLabels.common.toc[currentLang]
+
   // --- 상태: Uncontrolled(내부 관리) 또는 Controlled(부모 관리) 모두 지원
   const [internalEnabled, setInternalEnabled] = React.useState(defaultEnabled)
   const isControlled = typeof enabled === 'boolean'
@@ -98,7 +106,7 @@ export default function TOCSidebar({
       <div className="xl:sticky xl:top-24 xl:max-h-[calc(100vh-7rem)] xl:overflow-y-auto xl:pl-4">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400">
-            TOC
+            {tocLabel}
           </h2>
           <button
             onClick={toggle}

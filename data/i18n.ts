@@ -44,6 +44,11 @@ export const i18nLabels = {
       en: 'Read more',
       ja: 'もっと見る',
     },
+    toc: {
+      ko: '목차',
+      en: 'TOC',
+      ja: '目次',
+    },
   },
 }
 

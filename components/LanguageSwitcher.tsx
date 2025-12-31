@@ -35,7 +35,7 @@ export default function LanguageSwitcher() {
     <div className="relative">
       <button
         onClick={() => setOpen((s) => !s)}
-        className="hover:text-primary-500 dark:hover:text-primary-400 flex items-center gap-1.5 rounded px-2 py-1 text-sm font-medium"
+        className="hover:text-primary-500 dark:hover:text-primary-400 flex cursor-pointer items-center gap-1.5 rounded px-2 py-1 text-sm font-medium"
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label={`Change language (current: ${LANG_LABELS[currentLang as Lang] ?? LANG_LABELS.ko})`}
@@ -55,7 +55,7 @@ export default function LanguageSwitcher() {
             <li key={lang}>
               <button
                 role="menuitem"
-                className={`w-full rounded px-3 py-2 text-left text-sm ${
+                className={`w-full cursor-pointer rounded px-3 py-2 text-left text-sm ${
                   lang === currentLang
                     ? 'bg-gray-100 font-semibold dark:bg-gray-800'
                     : 'hover:bg-gray-100 dark:hover:bg-gray-800'

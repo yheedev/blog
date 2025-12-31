@@ -26,7 +26,7 @@ const ThemeSwitch = () => {
     <div className="flex items-center">
       <Menu as="div" className="relative inline-block text-left">
         <div className="hover:text-primary-500 dark:hover:text-primary-400 flex items-center justify-center">
-          <MenuButton aria-label="Theme switcher">
+          <MenuButton aria-label="Theme switcher" className="cursor-pointer">
             {mounted ? (
               resolvedTheme === 'dark' ? (
                 <Moon className="h-6 w-6" />
@@ -54,7 +54,7 @@ const ThemeSwitch = () => {
                   <MenuItem>
                     {({ focus }) => (
                       <button
-                        className={`${focus ? 'bg-primary-600 text-white' : ''} group flex w-full items-center rounded-md px-2 py-2 text-sm`}
+                        className={`${focus ? 'bg-primary-600 text-white' : ''} group flex w-full cursor-pointer items-center rounded-md px-2 py-2 text-sm`}
                       >
                         <div className="mr-2">
                           <Sun className="h-5 w-5" />
@@ -70,7 +70,7 @@ const ThemeSwitch = () => {
                       <button
                         className={`${
                           focus ? 'bg-primary-600 text-white' : ''
-                        } group flex w-full items-center rounded-md px-2 py-2 text-sm`}
+                        } group flex w-full cursor-pointer items-center rounded-md px-2 py-2 text-sm`}
                       >
                         <div className="mr-2">
                           <Moon className="h-5 w-5" />
@@ -86,7 +86,7 @@ const ThemeSwitch = () => {
                       <button
                         className={`${
                           focus ? 'bg-primary-600 text-white' : ''
-                        } group flex w-full items-center rounded-md px-2 py-2 text-sm`}
+                        } group flex w-full cursor-pointer items-center rounded-md px-2 py-2 text-sm`}
                       >
                         <div className="mr-2">
                           <Monitor className="h-5 w-5" />

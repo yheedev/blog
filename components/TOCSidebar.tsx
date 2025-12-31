@@ -3,6 +3,10 @@
 import React from 'react'
 import Slugger from 'github-slugger'
 import clsx from 'clsx'
+import { ChevronUp, ChevronDown } from 'lucide-react'
+import { usePathname } from 'next/navigation'
+import { i18nLabels } from '@/data/i18n'
+import type { Lang } from '@/lib/types'
 
 type TOCItem = { id: string; text: string; depth: number }
 
@@ -29,6 +33,11 @@ export default function TOCSidebar({
   enabled, // 있으면 Controlled
   onToggle, // 있으면 Controlled
 }: Props) {
+  // --- 언어 감지
+  const pathname = usePathname()
+  const currentLang = (pathname?.split('/')[1] || 'ko') as Lang
+  const tocLabel = i18nLabels.common.toc[currentLang]
+
   // --- 상태: Uncontrolled(내부 관리) 또는 Controlled(부모 관리) 모두 지원
   const [internalEnabled, setInternalEnabled] = React.useState(defaultEnabled)
   const isControlled = typeof enabled === 'boolean'
@@ -93,18 +102,19 @@ export default function TOCSidebar({
 
   // --- 렌더
   return (
-    <aside className={clsx('hidden xl:block xl:self-start')}>
-      <div className="sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto pl-4">
+    <aside className={clsx('xl:self-start', className)}>
+      <div className="xl:sticky xl:top-24 xl:max-h-[calc(100vh-7rem)] xl:overflow-y-auto xl:pl-4">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400">
-            TOC
+            {tocLabel}
           </h2>
           <button
             onClick={toggle}
-            className="rounded-md border px-2 py-1 text-xs hover:bg-gray-50 dark:hover:bg-gray-800"
+            className="rounded-md border p-1.5 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800"
             aria-pressed={show}
+            aria-label={show ? 'Hide table of contents' : 'Show table of contents'}
           >
-            {show ? 'Hide' : 'Show'}
+            {show ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
           </button>
         </div>
 

@@ -1,10 +1,10 @@
 {
-  "name": "",
-  "short_name": "",
+  "name": "Blog",
+  "short_name": "Blog",
   "icons": [
     {
-      "src": "/android-chrome-96x96.png",
-      "sizes": "96x96",
+      "src": "/favicon_lucario.png",
+      "sizes": "512x512",
       "type": "image/png"
     }
   ],

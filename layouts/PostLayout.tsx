@@ -97,6 +97,12 @@ export default function PostLayout({ content, next, prev, children }: LayoutProp
           </header>
           <div className="grid-rows-[auto_1fr] divide-y divide-gray-200 pb-8 xl:grid xl:grid-cols-4 xl:gap-x-6 xl:divide-y-0 dark:divide-gray-700">
             <div className="divide-y divide-gray-200 xl:col-span-3 xl:row-span-2 xl:pb-0 dark:divide-gray-700">
+              {/* TOC for Mobile/Tablet - shown above content */}
+              {toc && (
+                <div className="pt-6 pb-4 xl:hidden">
+                  <TOCSidebar className="relative" />
+                </div>
+              )}
               <div className="prose dark:prose-invert max-w-none pt-10 pb-8">{children}</div>
               <div className="pt-6 pb-6 text-sm text-gray-700 dark:text-gray-300">
                 <Link href={discussUrl(path)} rel="nofollow">
@@ -115,8 +121,8 @@ export default function PostLayout({ content, next, prev, children }: LayoutProp
               )}
             </div>
 
-            {/* TOC Sidebar */}
-            {toc && <TOCSidebar />}
+            {/* TOC Sidebar for Desktop - shown on right side */}
+            {toc && <TOCSidebar className="hidden xl:block" />}
 
             <footer>
               <div className="divide-gray-200 text-sm leading-5 font-medium xl:col-start-1 xl:row-start-2 xl:divide-y dark:divide-gray-700">

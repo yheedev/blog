@@ -10,7 +10,7 @@
 
 ⬜️ ex: 핵심 로직 구현
 
-⬜️ `npm run dev`, `npm run build` 성공
+⬜️ `yarn dev`, `yarn build` 성공
 
 ⬜️ eslint 에러 발생하지 않음
 

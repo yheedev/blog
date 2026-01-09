@@ -1,10 +1,10 @@
 {
-  "javascript": 7,
+  "javascript": 8,
   "nextjs": 8,
   "react-query": 4,
   "vercel": 3,
   "typescript": 6,
-  "react": 7,
+  "react": 8,
   "zustand": 2,
   "tailwind-css": 2,
   "radix-ui": 1,

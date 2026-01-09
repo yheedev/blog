@@ -14,51 +14,61 @@ export interface BloggerProfile {
   bio: string
 }
 
-// TODO
-// [ ] 겹치는 정보 정리하기 (예: github, email, github 등)
-// [ ] 프로필 사진 추가
+const COMMON_TECH_STACK = `· Frontend
+JavaScript, TypeScript, React, Next.js, Zustand, Redux, Tailwind css, Styled-components, Jest
+
+· Tools & Infrastructure
+AWS, Git, Figma, Jira
+
+---
+`
+
+const COMMON_FIELDS = {
+  nickname: 'yhee',
+  avatar: '/static/images/profile.webp',
+  email: 'yheedev@gmail.com',
+  github: 'https://github.com/yheedev',
+}
 
 export const bloggerProfiles: Record<Lang, BloggerProfile> = {
   ko: {
     name: '윤희은',
-    nickname: 'yhee',
-    avatar: '/static/images/avatar.png',
+    ...COMMON_FIELDS,
     occupation: '프론트엔드 개발자',
-    email: 'yheedev@gmail.com',
-    github: 'https://github.com/yheedev',
-    bio: `안녕하세요! yhee입니다.
+    bio: `${COMMON_TECH_STACK}
+안녕하세요. 프론트엔드 개발자 윤희은입니다. yh, yhee, benny 등 다양한 닉네임을 사용하고 있지만, 실명으로 불러주시는 것을 가장 선호합니다.
 
-웹 개발과 사용자 경험에 관심이 많으며, React와 Next.js를 주로 사용합니다.
-백엔드 개발자와의 협업을 통해 완성도 높은 웹 애플리케이션을 만들고 있습니다.`,
+[My Pokemon Type](https://mypokemontype.vercel.app/) 프로젝트를 개발하고 2년 가량 운영하고 있으며, 다국어 지원과 접근성을 기반으로 한 사용자 경험 개선에 집중해 왔습니다. 브라우저 전반의 동작 흐름에 대한 이해를 바탕으로, 사용자를 자연스럽게 끌어들이는 인터랙션과 UI를 설계합니다.
+
+한국인으로 한국어를 모국어로 사용하며, 일본어와 영어로 의사소통이 가능합니다. 번역 오픈 소스 프로젝트에 기여한 경험이 있고, 언어와 맥락을 연결하는 작업이 즐겁습니다.
+
+프론트엔드 개발을 비롯해서 제가 번역, 문서화 등으로 기여할 수 있는 오픈 소스 프로젝트를 운영 중이시라면 편하게 메일 주세요!`,
   },
   en: {
     name: 'Yoon Heeeun',
-    nickname: 'yhee',
-    avatar: '/static/images/avatar.png',
+    ...COMMON_FIELDS,
     occupation: 'Frontend Developer',
-    email: 'yheedev@gmail.com',
-    github: 'https://github.com/yheedev',
-    bio: `Hello! I'm yhee, a frontend developer passionate about web development and user experience.
+    bio: `${COMMON_TECH_STACK}
+Hello, I'm Heeeun Yoon, a frontend developer. I go by several nicknames such as yh, yhee, benny, but I prefer to be addressed by my real name. you can just call me hee or yoon.
 
-I primarily work with React and Next.js, and I enjoy building high-quality web applications through collaboration with backend developers.
+I've worked on projects including [My Pokemon Type](https://mypokemontype.vercel.app/) with a focus on improving user experience through multilingual support and accessibility. With a solid understanding of how browsers work end to end, I'm passionate about designing interactions and UIs that naturally draw users in.
 
-I love documenting and sharing what I learn along my development journey.
-I mainly write about frontend technologies, algorithms, and career development.`,
+I'm a native Korean speaker and can communicate in both Japanese and English. I've contributed to opensource translation projects and genuinely enjoy connecting language with context.
+
+If you're maintaining an open-source project where I could help through frontend development, translation, or documentation, feel free to reach out via email!`,
   },
   ja: {
-    name: 'ゆん・ひうん',
-    nickname: 'yhee',
-    avatar: '/static/images/avatar.png',
+    name: 'ユン・ヒウン',
+    ...COMMON_FIELDS,
     occupation: 'フロントエンド開発者',
-    email: 'yheedev@gmail.com',
-    github: 'https://github.com/yheedev',
-    bio: `こんにちは！フロントエンド開発者を目指しているyheeです。
+    bio: `${COMMON_TECH_STACK}
+こんにちは。フロントエンドエンジニアの ユン・ヒウンです。yh、yhee、benny などいくつかのニックネームを使っていますが、本名で呼んでいただくのが一番うれしいです。ユン や ヒと呼んでいただいても構いません。
 
-Web開発とユーザー体験に興味があり、主にReactとNext.jsを使用しています。
-バックエンド開発者との協業を通じて、完成度の高いWebアプリケーションを作っています。
+[My Pokemon Type](https://mypokemontype.vercel.app/) などのプロジェクトに携わり、多言語対応やアクセシビリティを軸にしたユーザー体験の向上に取り組んできました。ブラウザ全体の動作フローへの理解をもとに、ユーザーを自然に引き込むインタラクションや UI を設計することに情熱を持っています。
 
-開発で学んだ内容と経験を記録し、共有することが好きです。
-特にフロントエンド技術、アルゴリズム、そしてキャリアに関する記事を主に書いています。`,
+韓国語を母語とし、日本語と英語でのコミュニケーションが可能です。翻訳系のオープンソースプロジェクトへの貢献経験があり、言語と文脈をつなぐ作業そのものを楽しんでいます。
+
+フロントエンド開発、翻訳、ドキュメント作成などでお手伝いできそうな オープンソースプロジェクトを運営されていましたら、ぜひお気軽にメールでご連絡ください.`,
   },
 }
 
@@ -70,12 +80,9 @@ export function getBloggerProfile(lang: Lang): BloggerProfile {
 // 기본 프로필 (언어 무관)
 export const defaultProfile: Omit<BloggerProfile, 'bio' | 'occupation'> = {
   name: 'yhee',
-  avatar: '/static/images/avatar.png',
-  email: 'your-email@example.com',
-  github: 'https://github.com/yourusername',
+  ...COMMON_FIELDS,
   linkedin: 'https://linkedin.com/in/yourprofile',
   twitter: '',
   bluesky: '',
   company: '',
-  nickname: '',
 }

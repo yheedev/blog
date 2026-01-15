@@ -1,5 +1,5 @@
 {
-  "javascript": 8,
+  "javascript": 10,
   "nextjs": 8,
   "react-query": 4,
   "vercel": 3,
@@ -15,10 +15,10 @@
   "redux": 1,
   "redux-toolkit": 1,
   "i18next": 1,
-  "opensource": 1,
-  "translation": 1,
   "html": 1,
   "accessibility": 1,
   "publishing": 1,
-  "guide": 1
+  "guide": 1,
+  "opensource": 1,
+  "translation": 1
 }

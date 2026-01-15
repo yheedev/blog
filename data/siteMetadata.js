@@ -13,7 +13,7 @@ const siteMetadata = {
   github: 'https://github.com/yheedev',
   //x: 'https://twitter.com/x',
   youtube: 'https://www.youtube.com/@yheedev',
-  //linkedin: 'https://www.linkedin.com',
+  linkedin: 'https://www.linkedin.com/in/%ED%9D%AC%EC%9D%80-%EC%9C%A4-6956753a5/',
   locale: 'en-US',
   stickyNav: false,
   analytics: {

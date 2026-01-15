@@ -28,6 +28,7 @@ const COMMON_FIELDS = {
   avatar: '/static/images/profile.webp',
   email: 'yheedev@gmail.com',
   github: 'https://github.com/yheedev',
+  linkedin: 'https://www.linkedin.com/in/%ED%9D%AC%EC%9D%80-%EC%9C%A4-6956753a5/',
 }
 
 export const bloggerProfiles: Record<Lang, BloggerProfile> = {

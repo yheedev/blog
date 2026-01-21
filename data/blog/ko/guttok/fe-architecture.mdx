@@ -1,0 +1,692 @@
+---
+title: ' <구똑> 팀 프로젝트의 프론트엔드 아키텍쳐 설계 및 후기'
+date: '2025. 7. 15.'
+tags: ['Next.js', 'React', 'React Query', 'Vercel', 'Tailwind CSS']
+topics: ['Guttok']
+draft: false
+summary: '프레임워크, 상태 관리 전략, 폴더 구조 설계, API 통신 패턴, 스타일링 전략 등을 결정한 뒤 프로젝트 완료 이후 회고를 작성했습니다.'
+toc: true
+---
+
+> 최초 작성: 2023. 7. 15. [notion blog](https://www.notion.so/yheedev/3-231c7639cb4980d4b53ad476316c4bb9)
+
+<hr className="invisible mt-1" />
+
+팀 프로젝트 구똑을 시작하기 전에 프론트엔드 아키텍처를 설계하며 6가지를 핵심적으로 결정했다.
+
+1. 프레임워크 선택
+2. 상태 관리 전략
+3. 폴더 구조 설계
+4. API 통신 패턴
+5. 스타일링 전략
+6. 개발 환경 및 협업 도구
+
+개발을 완료한 지금 시점에서 이 결정들이 어떤 장점과 아쉬운 점이 있었는지, 그 속에서 다음 개발에 반영할 점이 무엇이었는지 정리해본다.
+
+<hr className="invisible mt-1" />
+
+## 1. 프레임워크 선택
+
+나는 React만 사용해왔지만, SSR과 SEO 측면에 한계가 있었다. 구독 서비스의 데이터를 저장하는 서비스 특성상 검색 유입을 기대할 수 있었기 때문에 SEO를 고려하는 것이 필요했다. 당시 팀원과 상의 하에 Next.js 15, React를 사용해보기로 했고, 나는 한입 Next.js 강의를 수강하며 프로젝트를 병행했다.
+
+<hr className="invisible mt-1" />
+
+## 2. 상태 관리 전략
+
+초반에 팀원은 "useState면 충분하다"는 입장이었다. 나는 10개 이상의 상태를 여러 페이지에서 공유해야 하므로 Zustand가 더 적합하다고 주장했다. 의견 차이가 좁혀지지 않아서 결국 각자 맡은 기능을 다른 방식으로 구현했던 점이 기억난다.
+
+하지만 Props Drilling, 코드 중복, 상태 불일치, 협업 복잡도와 같은 문제가 발생했고, 서로의 다른 패턴을 이해하는게 필요했다. 이후 팀원이 프로젝트를 나간 뒤 혼자 프론트엔드 개발을 맡은 뒤에는 Zustand를 전역적으로 통일해서 일관적인 상태 관리를 했다.
+
+이 경험을 통해 팀 프로젝트 시작 전, 전역적인 상태 관리 방식을 어떻게 결정할지 중요하다는 것을 깨달았다. 동일 상태는 동일 방식으로 관리하는게 유지보수에 용이하기 때문에 각자 다른 방식을 사용하는 것은 앞으로 지양해야한다고 생각한다.
+
+<hr className="invisible mt-1" />
+
+## 3. 폴더 구조 설계
+
+```
+📦 guttok-front/
+├─ 📂 .next/
+├─ 📂 .vscode/
+├─ 📂 public/
+├─ 📂 src/
+├─ 📄 .env
+├─ 📄 .env.local
+├─ 📄 .env.production
+├─ 📄 .gitignore
+├─ 📄 .prettierrc
+├─ 📄 components.json
+├─ 📄 Dockerfile
+├─ 📄 eslint.config.mjs
+├─ 📄 middleware.js
+├─ 📄 next-env.d.ts
+├─ 📄 next.config.ts
+├─ 📄 package-lock.json
+├─ 📄 package.json
+├─ 📄 postcss.config.js
+├─ 📄 README.md
+├─ 📄 tailwind.config.ts
+└─ 📄 tsconfig.json
+```
+
+크게 public, src 폴더로 나눴다. public 폴더에는 파비콘(ico, png), 유명 구독 서비스들 로고 (svg) 등 정적 이미지 파일들이 들어있다.
+
+```
+📦 app/
+├─ 📂 (auth)/
+├─ 📂 (protected)/
+├─ 📄 globals.css
+├─ 📄 layout.tsx
+├─ 📄 page.tsx
+└─ 📄 routes.ts
+```
+
+`app/` 내에는 비회원 전용 페이지인 auth와 회원 전용 페이지 protected를 나눠서 폴더에 담았다. 이렇게 하면 회원, 비회원 전용 페이지를 가시적으로 구분할 수 있을 뿐 아니라 미들웨어 적용이 쉽고, 레이아웃 분리가 쉽다는 장점이 있었다.
+
+### 메인 페이지 렌더링 방식
+
+```tsx
+// guttok-front/src/app/page.tsx
+
+import UnauthenticatedPage from '#components/Main/UnauthenticatedPage'
+import AuthenticatedPageServer from '#components/Main/AuthenticatesServer'
+import { cookies } from 'next/headers'
+import FeedbackButton from '#components/_common/FeedbackButton'
+
+export default async function Main() {
+  const cookie = await cookies()
+  const session = cookie.get('SESSION')?.value
+  const isLoggedIn = Boolean(session)
+
+  return (
+    <>
+      <main>{isLoggedIn ? <AuthenticatedPageServer /> : <UnauthenticatedPage />}</main>
+      <FeedbackButton />
+    </>
+  )
+}
+```
+
+SSR 방식으로 서버에서 쿠키를 통해 로그인 여부를 파악한다. 이후 로그인 상태에 따라 다른 페이지를 렌더링한다.
+
+```tsx
+// guttok-front/src/components/Main/AuthenticatesServer.tsx
+
+import AuthenticatedPageClient from './AuthenticatedPage'
+import { getItems } from '#apis/subscriptionAPI'
+
+export default async function AuthenticatedPageServer() {
+  const itemsData = await getItems()
+
+  return <AuthenticatedPageClient initialItems={itemsData.contents} />
+}
+```
+
+```tsx
+// guttok-front/src/components/Main/AuthenticatedPage.tsx
+
+'use client'
+
+import { Button } from '#components/_common/Button'
+import { PATH } from '#app/routes'
+import Link from 'next/link'
+import ItemList from '#components/ui/itemList'
+import { Plus } from 'lucide-react'
+import { getGreeting } from '#hooks/getGreeting'
+import { useGetUserInfoClient } from '#apis/userClient'
+import { useCurrentMonthPaymentTotal } from '#hooks/useTotalPayment'
+//import { Skeleton } from '#components/_common/Skeleton'
+import { useEffect } from 'react'
+// import { toast } from '#hooks/useToast'
+// import { useRouter } from 'next/navigation'
+// import { useAuthStore } from '#stores/auth/useAuthStore'
+
+export default function AuthenficatedPage({
+  initialItems,
+}: {
+  initialItems: any[]
+  const { getUserInfoClient, isLoading } = useGetUserInfoClient()
+
+  const monthlyTotal = useCurrentMonthPaymentTotal()
+
+  useEffect(() => {
+    getUserInfoClient()
+  }, [])
+
+  return (
+    <div className="mx-auto p-4 flex flex-col min-h-[calc(100vh-4.5rem)] pb-[3rem]">
+      <div className="flex justify-between mt-3 mb-6">
+        <div className="flex flex-col">
+          <h1 className="text-xl font-semibold flex flex-row">
+            {getGreeting()}
+          </h1>
+          <h2>
+            이번 달 지출은{' '}
+            <span className="font-bold">₩{monthlyTotal.toLocaleString()}</span>{' '}
+            입니다.
+          </h2>
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-auto mb-9">
+        <ItemList />
+      </div>
+
+      <div className="fixed bottom-[5.5rem] sm:bottom-[3rem] right-4 sm:right-10 transform h-14 rounded-full shadow-lg flex items-center justify-center">
+        <Link href={PATH.itemAdd} aria-label="구독 아이템 추가 페이지로 이동">
+          <Button className="flex w-16 h-16 rounded-full shadow-lg items-center justify-center">
+            <Plus size={48} />
+          </Button>
+        </Link>
+      </div>
+    </div>
+  )
+}
+```
+
+로그인을 했을 때에는 SSR+CSR 방식을 사용해서 유저의 구독 목록, 예정된 지출 내역을 가져와서 보여주었다.
+데이터가 이미 포함된 HTML을 전송하고, 즉각적인 상호 작용 (구독 목록 추가, 삭제, 수정 등)이 가능하다는 CSR의 장점을 적용했다.
+
+```tsx
+// guttok-front/src/components/Main/UnauthenticatedPage.tsx
+'use client'
+
+import Link from 'next/link'
+import { PATH } from '#app/routes'
+import { cn } from '#components/lib/utils'
+import { Bell, TextSearch, HandCoins, Mail } from 'lucide-react'
+import Carousel from '#components/ui/Carousel'
+import { Button } from '#components/_common/Button'
+import { buttonClassName, getIconClassName } from '#style/style'
+import { usePathname } from 'next/navigation'
+
+export default function UnauthenticatedPage() {
+  const pathname = usePathname()
+
+  return (
+    <div className="pb-[13rem] sm:pb-[2rem] background-color-[hsl(var(--background))] flex flex-col min-h-[calc(100vh-4.5rem)] 2xl:pb-[8rem]">
+      <div className="mt-10">
+        <Carousel />
+      </div>
+      <div className="px-4 pt-10 pb-30 text-center">
+        <h1 className="block text-4xl mb-2">
+          <span className="font-bold">구</span>독을{' '}
+          <span className="font-bold">똑</span>똑하게
+        </h1>
+        <p className="block text-lg text-sub mb-8">
+          스마트한 구독 생활을 위한 최고의 선택
+        </p>
+        <div className="space-x-4 mb-12">
+          <Link href={PATH.register} aria-label="회원가입 페이지로 이동">
+            <Button
+              type="button"
+              className={cn(
+                buttonClassName,
+                pathname === PATH.register && 'bg-accent',
+              )}
+            >
+              회원가입
+            </Button>
+// 이하생략
+```
+
+쿠키를 감지해서 로그인되지 않은 상태일 때에는 CSR 방식으로 랜딩 페이지를 표시한다.
+
+SSR 방식으로 렌더링하고 싶었는데 당시에는 캐러셀 컴포넌트를 사용하고 usePathname()과 같은 클라이언트 전용 훅을 사용했기 때문에 CSR 방식으로 사용했던 점이 아쉽다. 다음 번에는 SEO의 은혜를 받을 수 있도록 (!) 로그인 되지 않은 상태의 메인 페이지를 SSR 방식으로 구축해보고 싶다. 캐러셀과 usePathname을 사용한 부분은 별도 클라이언트 컴포넌트로 분리하도록 고려해보면 좋을 것 같다.
+
+### 비회원 전용 페이지 (로그인, 회원가입, 비밀번호 찾기 등)
+
+```
+📦 (auth)/
+├─ 📂 forgotPassword/
+│  ├─ 📂 reset/
+│  │  └─ 📄 page.tsx
+│  └─ 📄 page.tsx
+├─ 📂 login/
+│  └─ 📄 page.tsx
+├─ 📂 register/
+│  ├─ 📂 success/
+│  │  └─ 📄 page.tsx
+│  └─ 📄 page.tsx
+└─ 📄 layout.tsx
+```
+
+비회원 전용 페이지에는 대부분 CSR 방식을 사용했던 점이 아쉽다. useState, useRouter 등 클라이언트 훅이 필요했기 때문이다. 로그인 페이지는 SEO가 크게 중요하지 않지만, 랜딩 페이지는 SSR로 구현했다면 검색 유입에 더 유리했을 것이다.
+
+### 회원 전용 페이지 (CRUD, 마이페이지, 알림)
+
+```
+📦 (protected)/
+├─ 📂 item/
+│  ├─ 📂 [id]/
+│  │  ├─ 📂 detail/
+│  │  │  ├─ 📄 ClientDetailView.tsx
+│  │  │  └─ 📄 page.tsx
+│  │  └─ 📂 edit/
+│  │     ├─ 📄 ClientEditItems.tsx
+│  │     └─ 📄 page.tsx
+│  ├─ 📂 add/
+│  │  ├─ 📂 detail/
+│  │  │  ├─ 📄 ClientDetailItems.tsx
+│  │  │  └─ 📄 page.tsx
+│  │  ├─ 📄 ClientAddItems.tsx
+│  │  ├─ 📄 page.tsx
+│  │  └─ 📄 searchResults.tsx
+│  ├─ 📄 ClientItems.tsx
+│  └─ 📄 page.tsx
+├─ 📂 mypage/
+│  ├─ 📂 edit/
+│  │  ├─ 📄 ClientMypageEdit.tsx
+│  │  └─ 📄 page.tsx
+│  ├─ 📄 ClientMypage.tsx
+│  └─ 📄 page.tsx
+└─ 📂 notification/
+   ├─ 📄 ClientNotification.tsx
+   └─ 📄 page.tsx
+
+```
+
+회원 전용 페이지는 SSR + CSR 하이브리드로 구현했다.
+`page.tsx` (SSR) 서버에서 데이터 fetch를 하고, `ClientView.tsx` (CSR)에서 데이터 표시와 상호작용을 하는 방식이었다.
+데이터 포함된 HTML 전송을 통해 초기 로딩이 빨랐고, 상호작용 즉각 반응 (삭제, 수정), 초기 로딩 시간을 더 빠르게 개선할 수 있었다.
+
+### 실수와 배운 점
+
+초기에는 CSR과 SSR의 차이점 자체도 잘 모르는 상태로, 리액트와 Next.js를 사용해서 빨리 완성해보자는 생각으로 무조건 개발부터 시작했었다.
+그래서 전부 다 CSR 방식으로 개발했다가, 회원 전용 페이지를 SSR+CSR 하이브리드로 마이그레이션을 진행했었다. 하지만 이 또한 완벽하게 적절한 렌더링 방식이라는 생각은 들지 않는다. ISR 방식을 사용하는게 적절한 기능도 있었을 것이다. 렌더링 방식의 차이점을 미리 파악하고, 기능 별로 사용하기에 적절한지를 판단했으면 좋았겠다는 생각이 든다.
+
+<hr className="invisible mt-1" />
+
+다음에 반영할 점과 깨달은 점은 다음과 같다.
+
+1. 로그인, 회원가입, 검색, CRUD의 쓰기에 해당하는 페이지는 폼 입력 위주이기 때문에 즉각적인 상호작용을 위해 CSR이 적절할 수 있다. 로그인 여부와 SEO만이 렌더링 방식을 결정하지 않는다!
+2. 메인 페이지 대시보드는 데이터 표시 위주이기 때문에 SSR이 유리하다.
+3. 다음에 랜딩 페이지를 만든다면 서버 컴포넌트로 만들어서 SEO 상승을 노리고, 상호작용 부분은 클라이언트 컴포넌트로 분리하자.
+4. 쓰임새에 따라 일관적인 패턴을 적용하자.
+
+<hr className="invisible mt-1" />
+
+# 4. API 통신 패턴
+
+리액트 쿼리를 사용해서 백엔드 개발자 팀원들이 만든 서버에 요청과 응답을 통해 데이터를 가져왔다. 이 때 요청을 할 때 로그인 여부를 담았다.
+
+로그인 후 메인 페이지에는 CRUD를 통해 생성한 구독 목록을 랜딩페이지에 보여주기 때문에 SSR+CSR 패턴을 선택했다. 첫 화면이라 빠른 렌더링이 필요했다.
+
+### SSR + CSR 방식
+
+```TS
+// guttok-front/src/apis/subscriptionAPI.ts
+
+'use server'
+
+import type { SubscriptionContents } from '#types/subscription'
+import { BASE_URL } from '#constants/url'
+import { cookies } from 'next/headers'
+import { PageRequest, fetchNotiRequest } from '#types/notification'
+
+// 구독서비스 조회 GET (/)
+export async function getItems(pageRequest: PageRequest = fetchNotiRequest) {
+  const query = new URLSearchParams({
+    lastId: String(pageRequest.lastId),
+    size: String(pageRequest.size),
+  })
+
+  const session = (await cookies()).get('SESSION')
+
+  if (!session) throw new Error('세션 없음')
+  console.log(session.value, 'fetching user info from')
+
+  const res = await fetch(
+    `${BASE_URL}/api/subscriptions/user?${query.toString()}`,
+    {
+      cache: 'no-cache',
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        Cookie: `SESSION=${session.value}`,
+      },
+    },
+  )
+
+  if (!res.ok && res.status === 401) {
+    throw new Error('로그인 세션이 만료되었습니다. 다시 로그인해주세요.')
+  }
+
+  if (!res.ok) {
+    throw new Error('구독 항목 불러오기 실패')
+  }
+
+  return res.json()
+}
+```
+
+서버에서 데이터를 포함한 HTML을 전송하기 때문에 빠른 초기 렌더링을 제공한다. SEO에 최적화되어있어서 검색 엔진이 완성된 콘텐츠를 수집할 수 있다. 또한 서버에서 쿠키에 직접 접근하기 때문에 인증 처리가 간편하다.
+
+서버, 클라이언트 파일이 분리되는 것이 필요하기 때문에 코드가 다소 복잡해지고, 모든 요청마다 서버에서 데이터를 조회해야하기 때문에 서버에 부하가 생긴다.
+
+### CSR 방식 (리액트 쿼리 사용)
+
+```ts
+// guttok-front/src/apis/notiClient.ts
+
+'use client'
+
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query'
+import { getNotis, putNotis, deleteNotis } from '#apis/notiAPI'
+import { useAuthStore } from '#stores/auth/useAuthStore'
+import type { PageRequest } from '#types/notification'
+import { useIsLoggedInQuery } from '#hooks/useIsLoggedInQuery'
+import { useUserId } from '#hooks/useUserId'
+import { FETCH_ALL } from '#constants/pagination'
+import { BASE_URL } from '#constants/url'
+import { toast } from '#hooks/useToast'
+
+// 알림 상태 변경 PATCH
+export const usePatchAlarmClient = () => {
+  const { setUser } = useAuthStore()
+
+  return useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`${BASE_URL}/api/users/alarm`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (!res.ok) {
+        const errorData = await res.json()
+        throw new Error(errorData.message || '알림 설정 변경을 실패했습니다.')
+      }
+      const json = await res.json()
+      return json
+    },
+
+    onSuccess: () => {
+      setUser((prev) => {
+        const nextAlarm = !prev.alarm
+        toast({
+          description: nextAlarm
+            ? '이메일 알림 수신을 받습니다.'
+            : '이메일 알림 수신을 받지 않습니다',
+          variant: 'default',
+        })
+        return {
+          ...prev,
+          alarm: nextAlarm,
+        }
+      })
+    },
+
+    onError: (error) => {
+      console.error('알림 설정 변경 실패', error)
+      toast({
+        description: error.message || '알림 설정 변경 중 오류가 발생했습니다.',
+        variant: 'destructive',
+      })
+    },
+  })
+}
+```
+
+인증 여부를 `credentials: 'include',`로 해결한다.
+클라이언트에서 모든 데이터 흐름을 제어하고, 캐싱과 리페칭을 자동화했다. 리액트 쿼리가 stale time, refetch 등을 관리했다.
+또한 낙관적 업데이트를 통해 setQueryData로 즉시 UI를 반영할 수 있도록 했다.
+
+아쉬운 점이 있다면 초기 로딩이 지연되고, 크롤러가 빈 HTML만 수집하기 때문에 SEO 측면에서 아쉬움이 있다.
+
+## 조건부 쿼리
+
+```typescript
+// useIsLoggedInQuery.ts
+export function useIsLoggedInQuery(queryKey, queryFn, options) {
+  const isLoggedIn = useAuthStore((state) => state.isLoggedIn)
+
+  return useQuery({
+    queryKey,
+    queryFn,
+    enabled: isLoggedIn && (options?.enabled ?? true),
+  })
+}
+```
+
+로그인 상태에서만 쿼리를 실행하는 커스텀 훅을 만들어서 사용했다.
+
+### 배운 점과 다음 프로젝트에 반영할 사항
+
+- queryKey 불일치로 인한 캐시 무효화에 실패했다는 점을 깨달았다. 조회할 때는 `'client'`를 키로 쓰고, 무효화할 때는 `userId`를 키로 써서 수정 후에도 목록이 갱신되지 않는 버그가 발생했다. 다음에 조회 기능을 구현할 때 queryKey를 상수나 팩토리 함수로 관리해야겠다고 다짐했다.
+
+- 개별 조회 get API (`/api/subscriptions/:id`)가 없어서 전체 목록을 가져오는 조회 API (`/api/subscriptions`)를 요청하고 그 다음에 find를 통해 개별 조회를 하는 방식을 사용했다. 사실 당시에는 개별 조회 API가 존재하는지, 필요한건지를 너무 늦게 파악해서 비효율적인 것을 알지만 그렇게 구성했다. 다음에는 백엔드 개발자들과 기능에 대한 논의를 할 때 개별 조회 API를 만들어달라는 요청을 적극적으로 해야겠다고 다짐했다.
+
+- 낙관적 업데이트와 invalidate가 혼용되었다. 삭제도 낙관적 업데이트가 가능한데 하지 않았다는 점에서 UX가 저하될 수 있을 것 같다. mutation 특성에 따라 전략을 선택했으면 좋았겠다는 생각이 든다.
+
+- 모든 훅에서 fetch + 에러 처리가 반복된다.
+
+```typescript
+const res = await fetch(`${BASE_URL}/api/...`, {
+  method: 'POST',
+  credentials: 'include',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify(payload),
+})
+if (!res.ok) {
+  const errorData = await res.json()
+  throw new Error(errorData.message || '...')
+}
+return res.json()
+```
+
+이런 패턴이 10번 이상 반복되는데, 공통적인 fetch 래퍼를 만들어서 중복 코드를 줄이면 좋았을 것 같다.
+
+- 네이밍 컨벤션을 정확히 정하면 좋았겠다는 생각이 든다. use 접미사를 공통적으로 사용할 것인지, Client 접두사를 공통적으로 사용할 것인지 말이다. 이러한 컨벤션을 문서화로 해뒀으면 정확한 작명이 가능했을 것 같다. 앞으로는 혼자 개인 프로젝트를 할 때에도 md 파일에 컨벤션을 가이드로 정리해서 참고해보고 싶다.
+
+- 타입 안정성이 부족해서 아쉽다. 프로젝트 마감일이 얼마 남지 않아서 any를 꽤 남발했던 것 같다. 다음에는 정확한 타입을 기재했으면 좋았을 것 같다.
+
+<hr className="invisible mt-1" />
+
+# 5. 스타일링 도구
+
+Tailwind CSS, Radix UI를 중심으로 사용했다. Tailwind CSS를 처음 적용하면서 공식 문서를 참고하느라 시간이 오래 걸렸는데, [Tailwind Documentation](https://marketplace.visualstudio.com/items?itemName=alfredbirk.tailwind-documentation&ssr=false#review-details) 확장 프로그램의 도움을 많이 받았다. 윈도우에서 ctrl + alt + t를 누르면 바로 공식문서가 IDE 내 탭으로 나와서 검색이 편리했다.
+
+전체적으로 CSS 변수 기반 디자인을 적용해서 라이트모드와 다크모드의 색상을 관리했다. styled-components에서 사용해본 적 있던 방식이라 익숙했다.
+
+```css
+// src/app/globals.css
+
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
+
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+html {
+  font-size: 100%;
+}
+
+body {
+  font-family: 'Pretendard', sans-serif;
+  font-size: 16px;
+}
+
+@layer base {
+  :root {
+    --background: 20 13% 95%;
+    --foreground: 0 0% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 3.9%;
+//이하생략
+  }
+
+  .dark {
+    --background: 0 0% 7%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 3.9%;
+    --card-foreground: 0 0% 98%;
+//이하생략
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+  @keyframes scroll {
+    0% {
+      transform: translateX(0);
+    }
+    100% {
+      transform: translateX(-50%);
+    }
+  }
+
+  .animate-scroll {
+    animation: scroll 40s linear infinite;
+  }
+}
+
+```
+
+- cn () 유틸리티를 사용해서 클래스 충돌을 방지했다.
+  bg-white, bg-primary 같이 동일한 스타일이 충돌할 때 기존 tailwind css에서는 따로 에러를 내지 않아서 헷깔릴 수 있다. cn 유틸리티를 사용하면 자동으로 후자만 적용이 된다.
+
+```ts
+import { clsx, type ClassValue } from 'clsx'
+import { twMerge } from 'tailwind-merge'
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs))
+}
+```
+
+이 부분을 공부한 내용은 블로그에 작성했다. **[clsx, cn, twMerge의 차이점](https://yheedev.vercel.app/ko/blog/til/clsx-cn-twMerge)**
+
+- Radix UI로부터 다운로드 받은 컴포넌트들을 변형해서 사용할 수 있도록 했다
+
+```typescript
+// Button/index.tsx
+const buttonVariants = cva('기본 스타일들...', {
+  variants: {
+    variant: {
+      default: 'bg-primary text-primary-foreground',
+      destructive: 'bg-destructive text-destructive-foreground',
+      outline: 'border border-input bg-background',
+      ghost: 'hover:bg-accent',
+    },
+    size: {
+      default: 'h-9 px-4 py-2',
+      sm: 'h-8 px-3 text-xs',
+      lg: 'h-10 px-8',
+    },
+  },
+})
+```
+
+```typescript
+// 사용
+<Button variant="destructive" size="sm">삭제</Button>
+```
+
+타입에 안전한 variant props를 적용할 수 있고, 이러한 디자인 시스템을 강제할 수 있다.
+
+- Radix UI로 접근성을 확보했다.
+
+```tsx
+// Dialog/index.tsx
+import * as DialogPrimitive from '@radix-ui/react-dialog'
+;<DialogPrimitive.Content
+  className={cn(
+    'fixed top-[50%] left-[50%] -translate-x-1/2 -translate-y-1/2',
+    'data-[state=open]:animate-in data-[state=closed]:animate-out'
+  )}
+>
+  <DialogPrimitive.Close>
+    <X />
+    <span className="sr-only">Close</span> {/* 스크린리더용 */}
+  </DialogPrimitive.Close>
+</DialogPrimitive.Content>
+```
+
+키보드 네비게이션, 포커스 트랩이 자동 처리 된다. 접근성과 관련된 aria 속성이 내장되어있어서 스타일링만 직접 하면 되어서 편리했다.
+
+### 배운 점과 다음 프로젝트에 반영할 사항
+
+- 반응형 breakpoint 상수와 tailwind가 불일치한다.
+
+```ts
+// constants/breakpoints.ts
+export const BREAKPOINTS = {
+  sm: '640px',
+  lg: '1024px',
+}
+
+// useMediaQuery에서 사용
+useMediaQuery(`(max-width: ${BREAKPOINTS.sm})`)
+```
+
+tailwind의 sm, md, lg와 별개로 상수 관리를 하다보니 반응형 구현에 실수가 존재할 수 있었겠다는 생각이 든다. 앞으로는 tailwind config에서 가져오거나 단일 소스로 관리해야겠다고 다짐했다.
+
+- 컴포넌트마다 다른 스타일링 패턴이 쓰인다.
+
+Button 같은 경우에는 CVA + cn() 패턴이 쓰이고, Input 같은 경우에는 직접 Tailwind로 만들고 cn()을 사용했다. 물론 필요에 따라 커스텀해서 사용하는 것이 필요하겠으나 컴포넌트 작성 가이드라인을 문서화해야겠다고 다짐했다.
+
+<hr className="invisible mt-1" />
+
+# 6. 개발 환경 및 협업 도구
+
+| 카테고리          | 도구               | 버전   |
+| ----------------- | ------------------ | ------ |
+| **패키지 매니저** | npm                | -      |
+| **프레임워크**    | Next.js            | 15.2.4 |
+| **언어**          | TypeScript         | 5.x    |
+| **린터**          | ESLint             | 9.x    |
+| **포매터**        | Prettier           | 3.5.3  |
+| **CSS 빌드**      | PostCSS + Tailwind | 3.4.17 |
+
+- 패키지 매니저는 npm이 익숙해서 딱히 논의를 거치지 않고 사용했다. yarn도 많이 사용되던데 다음에는 각각의 차이점과 더 적절한 사용처를 파악하고 사용하고 싶다. 프레임워크는 Next.js 15로, 앱 라우터를 적용해볼 수 있었다. 웹팩이 next.js에 내장되어있었고, next.config.ts에서 직접 웹팩을 설정했다.
+
+- path alias는 `#` 접두사를 사용했다. `@`와 기능적으로 차이점은 없고, 혼용해서 사용하지 않기만 하면 되었다.
+
+- api proxy를 설정해서 CORS를 우회했다.
+
+```ts
+// next.config.ts
+async rewrites() {
+  if (process.env.NODE_ENV === 'development') {
+    return [{
+      source: '/api/:path*',
+      destination: 'http://localhost:8080/api/:path*',  // 백엔드 서버
+    }]
+  }
+  // production
+  return [{
+    source: '/api/:path*',
+    destination: `${process.env.API_BASE_URL}/api/:path*`,
+  }]
+}
+
+```
+
+- eslint와 프리티어를 설정해서 일관적인 코드를 작성했다.
+
+- 협업도구로는 Jira를 사용해서 각 태스크를 PR에 작성해서 티켓별로 관리했다. 그래서 각 팀원들이 현재 어떤 작업을 어떻게 하고 있는지를 파악할 수 있었다.
+
+- 음성 회의와 자잘한 메세지 전달 등은 디스코드를 사용했다. 매주 월요일 20시마다 진행했고 필요할 때 추가적으로 진행했으니 총 30회 이상은 진행했던 것 같다. 저녁, 밤, 새벽 시간대를 불문하고 열심히 임해준 팀원 분들께 감사를 전하고 싶다.
+
+- [기획](https://www.relume.io/app/project/P1385173_IIXxQacXXzIBf0mRbbfWDikpCaVTBQb-PvtLL61wn5U#mode=sitemap)
+  기획자가 없었기 때문에 각자 아이템을 가져온 뒤에 AI 툴을 탐색해서 Relume을 사용했고, 와이어프레임을 빠르게 만들고 기능을 확정했다.
+- [디자인 페이지](https://creatie.ai/file/147084540353878?page_id=M&shareId=147084540353878)
+  디자인 또한 AI 툴을 탐색해서 Creatie라는 생성형 AI툴을 사용했는데 지금은 서비스가 종료된 것 같다. 아예 creati.ai 에 접속이 불가능하다. 당시에는 피그마 대체제로 핫했는데 새삼 시간이 참 빠르구나 싶다
+
+- [회고](https://www.notion.so/2030c23756e080e6804cd3a387c8b93e?v=2030c23756e08045be79000cfcaed6b0) 노션에서 다같이 회고를 작성했다.
+
+<hr className="invisible mt-2" />
+
+이번 팀 프로젝트를 통해 기술적인 측면 뿐 아니라 협업의 중요성도 깨달을 수 있었다. 다음 프로젝트에서는 이번 경험을 바탕으로 더 나은 아키텍처와 협업 방식을 적용해서 더 완성도 높은 프로젝트를 만들어보고 싶다.

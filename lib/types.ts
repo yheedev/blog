@@ -2,7 +2,7 @@ export const LANGS = ['ko', 'en', 'ja'] as const
 export type Lang = (typeof LANGS)[number]
 export const DEFAULT_LANG: Lang = 'ko'
 
-export const TOPICS = [
+export const PROJECTS = [
   'My Pokemon Type',
   'Guttok',
   'Perkwatch',

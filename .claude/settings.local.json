@@ -17,7 +17,8 @@
       "Bash(git ls-tree:*)",
       "Bash(yarn add:*)",
       "Bash(npx tailwindcss --help:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []

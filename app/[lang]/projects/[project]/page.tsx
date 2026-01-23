@@ -15,7 +15,7 @@ export async function generateMetadata(props: {
   const project = decodeURIComponent(params.project)
   return genPageMetadata({
     title: project,
-    description: `${siteMetadata.title} - ${project} 관련 포스트`,
+    description: `${siteMetadata.title} - ${project} 프로젝트 관련 포스트 모음`,
   })
 }
 
@@ -43,7 +43,10 @@ export default async function ProjectPage(props: {
     sortPosts(
       allBlogs.filter(
         (post) =>
-          post.lang === lang && !post.draft && post.projects && post.projects.includes(project)
+          post.lang === lang &&
+          !post.draft &&
+          post.projects &&
+          (post.projects as string[]).includes(project)
       )
     )
   )

@@ -2,6 +2,7 @@ import Link from '@/components/Link'
 import Tag from '@/components/Tag'
 import { slug } from 'github-slugger'
 import tagData from 'app/tag-data.json'
+import projectData from 'app/project-data.json'
 import { genPageMetadata } from 'app/seo'
 import { Lang } from '@/lib/types'
 
@@ -13,9 +14,42 @@ export default async function Page({ params }: { params: Promise<{ lang: Lang }>
   const tagKeys = Object.keys(tagCounts)
   const sortedTags = tagKeys.sort((a, b) => tagCounts[b] - tagCounts[a])
 
+  const projectCounts = projectData as Record<string, number>
+  const projectKeys = Object.keys(projectCounts)
+  const sortedProjects = projectKeys.sort((a, b) => projectCounts[b] - projectCounts[a])
+
   return (
     <>
+      {/* Projects Section */}
       <div className="flex flex-col items-start justify-start divide-y divide-gray-200 md:mt-24 md:flex-row md:items-center md:justify-center md:space-x-6 md:divide-y-0 dark:divide-gray-700">
+        <div className="space-x-2 pt-6 pb-8 md:space-y-5">
+          <h1 className="text-3xl leading-9 font-extrabold tracking-tight text-gray-900 sm:text-4xl sm:leading-10 md:border-r-2 md:px-6 md:text-6xl md:leading-14 dark:text-gray-100">
+            Projects
+          </h1>
+        </div>
+        <div className="flex max-w-lg flex-wrap">
+          {projectKeys.length === 0 && 'No projects found.'}
+          {sortedProjects.map((p) => {
+            return (
+              <div key={p} className="mt-2 mr-5 mb-2">
+                <Link
+                  href={`/${lang}/projects/${encodeURIComponent(p)}`}
+                  className="text-primary-500 hover:text-primary-600 dark:hover:text-primary-400 text-sm font-medium uppercase"
+                  aria-label={`View posts about ${p}`}
+                >
+                  {p}
+                </Link>
+                <span className="ml-1 text-sm font-semibold text-gray-600 dark:text-gray-300">
+                  ({projectCounts[p]})
+                </span>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Tags Section */}
+      <div className="flex flex-col items-start justify-start divide-y divide-gray-200 md:mt-12 md:flex-row md:items-center md:justify-center md:space-x-6 md:divide-y-0 dark:divide-gray-700">
         <div className="space-x-2 pt-6 pb-8 md:space-y-5">
           <h1 className="text-3xl leading-9 font-extrabold tracking-tight text-gray-900 sm:text-4xl sm:leading-10 md:border-r-2 md:px-6 md:text-6xl md:leading-14 dark:text-gray-100">
             Tags

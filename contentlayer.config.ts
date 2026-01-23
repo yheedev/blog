@@ -5,7 +5,7 @@ import readingTime from 'reading-time'
 import { slug } from 'github-slugger'
 import path from 'path'
 import { fromHtmlIsomorphic } from 'hast-util-from-html-isomorphic'
-import { LANGS, TOPICS } from './lib/types'
+import { LANGS, PROJECTS } from './lib/types'
 // Remark packages
 import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
@@ -129,6 +129,26 @@ async function createTagCount(allBlogs) {
   writeFileSync('./app/tag-data.json', formatted)
 }
 
+/**
+ * Count the occurrences of all projects across blog posts and write to json file
+ */
+async function createProjectCount(allBlogs) {
+  const projectCount: Record<string, number> = {}
+  allBlogs.forEach((file) => {
+    if (file.projects && (!isProduction || file.draft !== true)) {
+      file.projects.forEach((project) => {
+        if (project in projectCount) {
+          projectCount[project] += 1
+        } else {
+          projectCount[project] = 1
+        }
+      })
+    }
+  })
+  const formatted = await prettier.format(JSON.stringify(projectCount, null, 2), { parser: 'json' })
+  writeFileSync('./app/project-data.json', formatted)
+}
+
 function createSearchIndex(allBlogs) {
   if (
     siteMetadata?.search?.provider === 'kbar' &&
@@ -150,9 +170,9 @@ export const Blog = defineDocumentType(() => ({
     date: { type: 'date', required: true },
     toc: { type: 'boolean', default: true },
     tags: { type: 'list', of: { type: 'string' }, default: [] },
-    topics: {
+    projects: {
       type: 'list',
-      of: { type: 'enum', options: [...TOPICS] },
+      of: { type: 'enum', options: [...PROJECTS] },
       default: [],
       required: false,
     },
@@ -284,6 +304,7 @@ export default makeSource({
       (blog) => !blog._raw.sourceFilePath.includes('_templates')
     )
     createTagCount(filteredBlogs)
+    createProjectCount(filteredBlogs)
     createSearchIndex(filteredBlogs)
   },
 })

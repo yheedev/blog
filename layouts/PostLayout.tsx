@@ -96,6 +96,15 @@ export default function PostLayout({ content, next, prev, children }: LayoutProp
             </div>
           </header>
           <div className="grid-rows-[auto_1fr] divide-y divide-gray-200 pb-8 xl:grid xl:grid-cols-4 xl:gap-x-6 xl:divide-y-0 dark:divide-gray-700">
+            {/* TOC Sidebar for Desktop - fixed on right side */}
+            {toc && (
+              <aside className="hidden xl:col-start-4 xl:row-span-2 xl:row-start-1 xl:block">
+                <div className="sticky top-24 pt-10">
+                  <TOCSidebar />
+                </div>
+              </aside>
+            )}
+
             <div className="divide-y divide-gray-200 xl:col-span-3 xl:row-span-2 xl:pb-0 dark:divide-gray-700">
               {/* TOC for Mobile/Tablet - shown above content */}
               {toc && (
@@ -120,9 +129,6 @@ export default function PostLayout({ content, next, prev, children }: LayoutProp
                 </div>
               )}
             </div>
-
-            {/* TOC Sidebar for Desktop - shown on right side */}
-            {toc && <TOCSidebar className="hidden xl:block" />}
 
             <footer>
               <div className="divide-gray-200 text-sm leading-5 font-medium xl:col-start-1 xl:row-start-2 xl:divide-y dark:divide-gray-700">

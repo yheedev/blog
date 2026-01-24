@@ -16,7 +16,8 @@
       "Bash(npx tailwindcss --help:*)",
       "Bash(ls:*)",
       "Bash(find:*)",
-      "Bash(yarn remove:*)"
+      "Bash(yarn remove:*)",
+      "Bash(git stash:*)"
     ],
     "deny": [],
     "ask": []

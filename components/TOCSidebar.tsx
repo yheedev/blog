@@ -72,14 +72,20 @@ export default function TOCSidebar({
 
     const slugger = new Slugger()
     const hs = Array.from(root.querySelectorAll<HTMLHeadingElement>(headings))
-    const toc: TOCItem[] = hs.map((h) => {
-      let id = h.id
-      if (!id) {
-        id = slugger.slug(h.textContent || '')
-        h.id = id
-      }
-      return { id, text: h.textContent || '', depth: Number(h.tagName.replace('H', '')) }
-    })
+    const excludeTexts = ['목차', '태그', 'toc', 'tags']
+    const toc: TOCItem[] = hs
+      .filter((h) => {
+        const text = (h.textContent || '').trim().toLowerCase()
+        return !excludeTexts.includes(text)
+      })
+      .map((h) => {
+        let id = h.id
+        if (!id) {
+          id = slugger.slug(h.textContent || '')
+          h.id = id
+        }
+        return { id, text: h.textContent || '', depth: Number(h.tagName.replace('H', '')) }
+      })
     setItems(toc)
   }, [container, headings])
 
@@ -102,8 +108,8 @@ export default function TOCSidebar({
 
   // --- 렌더
   return (
-    <aside className={clsx('xl:self-start', className)}>
-      <div className="xl:sticky xl:top-24 xl:max-h-[calc(100vh-7rem)] xl:overflow-y-auto xl:pl-4">
+    <aside className={clsx(className)}>
+      <div className="xl:max-h-[calc(100vh-7rem)] xl:overflow-y-auto xl:pl-4">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-semibold tracking-wide text-gray-500 uppercase dark:text-gray-400">
             {tocLabel}

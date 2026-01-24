@@ -1,5 +1,7 @@
 {
   "javascript": 10,
+  "algorithm": 2,
+  "fe-기술면접-스터디": 2,
   "nextjs": 9,
   "react-query": 5,
   "vercel": 4,
@@ -9,16 +11,15 @@
   "zustand": 2,
   "radix-ui": 1,
   "zod": 1,
-  "aws": 1,
-  "amplify": 1,
-  "route-53": 1,
-  "redux": 1,
-  "redux-toolkit": 1,
+  "코어-자바스크립트": 1,
+  "web-optimization": 1,
+  "aws-amplify": 1,
+  "aws-route-53": 1,
+  "redux-toolkit": 2,
   "i18next": 1,
   "opensource": 1,
   "translation": 1,
-  "html": 1,
-  "accessibility": 1,
-  "publishing": 1,
-  "guide": 1
+  "til": 13,
+  "html": 2,
+  "accessibility": 1
 }

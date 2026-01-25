@@ -1,0 +1,212 @@
+---
+title: 'ComposeFlow 코틀린 오픈소스 UI 기여 후기'
+date: '2026. 1. 25.'
+tags: ['OpenSource', 'Kotlin']
+draft: false
+summary: 'Android Studio 설치 및 사용 방법, material3 테마 적용 방법'
+toc: true
+---
+
+> [PR 링크](https://github.com/ComposeFlow/ComposeFlow/pull/82)
+
+<hr className="invisible mt-1" />
+
+https://goodfirstissues.com/ 에서 ComposeFlow의 저장소의 이슈를 발견했다: [처음 발견한 이슈 링크](https://github.com/ComposeFlow/ComposeFlow/issues/78)
+
+ComposeFlow 오픈소스는 compose multiplatform 기반 비주얼 앱 빌더이다. 앱 UI를 드래그, 드롭해서 쉽게 생성할 수 있고, AI 에이전트 도움을 받아서 실제 코틀린 코드까지 자동 생성 가능한 앱 제작 툴이다.
+
+이슈만 훑어보고 나서 처음에는 간단하게 UI 부분만 수정하면 될 줄 알았는데, 알고보니 코틀린 99.7%로 이뤄져있는 프로젝트인 것을 알아챘다. 덕분에 살면서 처음으로 코틀린으로 코딩하는 경험을 해볼 수 있었다.
+
+<hr className="invisible mt-1" />
+
+### Android Studio 설치하기
+
+코틀린 앱 실행을 위해 Android Studio를 설치했다. VSCode로는 개발 자체는 가능하지만 로컬 실행이 불가능하다고 해서, 제대로 UI가 바뀌는지를 파악하기 위해 Android Studio를 설치했다. 도중에 이런 에러가 발생했었다.
+
+```
+Your Android SDK location contains non-ASCII characters.
+```
+
+이 에러는 `C:\Users\윤희은\...` 같이 한글이 들어간 경로에서 설치하다보니 생긴 에러였다. C 드라이브에 Android 폴더를 생성한 뒤에 `C:\Android` 위치로 옮겨주니 설치가 잘 되었다.
+
+<hr className="invisible mt-1" />
+
+## adoptium 설치
+
+ComposeFlow의 리드미에서는 JetBrains Runtime 17(JBR) 사용을 권장했는데, UI 수정은 Adoptium Temurin 17 만으로 충분했다고 느꼈다.
+
+```
+ComposeFlow> ./gradlew desktopApp:run
+
+ERROR: JAVA_HOME is not set and no 'java' command could be found in your PATH.
+
+Please set the JAVA_HOME variable in your environment to match the
+location of your Java installation
+```
+
+로컬 실행을 하려니까 이런 에러가 발생했는데, JDK를 추가로 설치하는게 필요했다. 또한 환경 변수 설정도 필요했다.
+이 에러는 JDK를 못 찾고 있다는 뜻으로, JDK17 설치가 필요했다.
+
+Android Studio는 개발 IDE이고, JetBrain이나 Adoptium은 자바의 런타임이다. 둘 다 함께 사용하는 것이다.
+
+[adoptium 설치 링크](https://adoptium.net/download?link=https%3A%2F%2Fgithub.com%2Fadoptium%2Ftemurin17-binaries%2Freleases%2Fdownload%2Fjdk-17.0.16%252B8%2FOpenJDK17U-jdk_x64_windows_hotspot_17.0.16_8.msi&vendor=Adoptium)
+
+위 링크에서 윈도우 Adoptium을 설치했다. 설치했던 경로를 꼭 기억해둬야 다음 환경 변수 설치에 참고할 수 있다.
+나같은 경우에는 `C:\Program Files\Eclipse Adoptium\jdk-17.0.16.8-hotspot` 경로에 저장을 했었다.
+
+## 환경변수 설정
+
+시작에 '환경 변수 편집' 검색 후 시스템 속성 실행 -> 상단 탭의 '고급' 클릭 후 환경 변수 클릭 -> 시스템 변수 새로만들기
+
+```
+변수 이름: JAVA_HOME
+변수 값: C:\Program Files\Eclipse Adoptium\jdk-17.0.16.8-hotspot
+```
+
+변수 생성 후 확인 버튼을 눌렀다.
+
+기존 Path 눌러서 새로 만들기 -> `%JAVA_HOME%\bin` 입력 후 확인 -> 환경 변수 창 확인 눌러서 닫기 -> 시스템 속성 창도 확인 눌러서 닫기
+
+## 안드로이드 스튜디오 설정
+
+Settings → Build, Execution, Deployment → Build Tools → Gradle
+gradle user home에 adoptium 설치된 경로 입력하기. 나는 `C:\Program Files\Eclipse Adoptium\jdk-17.0.16.8-hotspot` 를 입력해주었다.
+
+그리고 상단 좌측에 있는 코끼리 아이콘 (graddle 키)를 클릭했다. 그랬더니 에러가 발생했다.
+
+```
+Could not install Gradle distribution from 'https://services.gradle.org/distributions/gradle...'
+Reason: java.lang.RuntimeException: Could not create parent directory for lock file C:\....
+
+Plese ensure Android Studio can write to the specified Gradle wrapper distibution directory
+You can also change Graddle home directory in Gradle Settings.
+```
+
+이 에러는 Graddle이 배포 파일을 내려 받을 폴더에 권한이 없어서 생기는 에러라고 한다. `C:\Program Files\..` 경로는 쓰기 제한이 있다. gradle user home을 내가 쓸 수 있는 경로로 바꾸면 된다. C:\gradle 폴더를 만들어서 그 경로로 바꿔주니 해결되었다.
+
+<hr className="invisible mt-1" />
+
+```
+Your project path contains non-ASCII characters. This will most likely cause the build to fail on Windows. Please move your project to a different directory. See http://b.android.com/95744 for details. This warning can be disabled by adding the line 'android.overridePathCheck=true' to gradle.properties file in the project directory
+```
+
+또 이런 에러가 생겼는데, 이것도 위치 경로에 내 실명 한글 문자가 있어서 그랬다 ㅎㅎ.. 근본적으로 이후 한국어로 만든 계정 이름을 영어로 바꾸고, Android Studio를 재시작했는데 자잘한 여러 에러들이 발생했다.
+
+- `SDK location not found`
+- `Could not find compile target android-35 for modules :composeApp`
+- (연쇄로) Firebase 의존성 `Failed to resolve ...`
+
+이런 에러들이 발생했는데, 안드로이드 상단 메뉴 중 tools -> sdk manager -> 기존 위치가 `C:\android` 였는데, 이 폴더에 sdk 라는 폴더를 새로 생성해준 뒤에 위치를 `C:\android\sdk` 로 옮겨주었다. 그리고 `C:\ComposeFlow` 위치, 그러니까 `settings.gradle.kts`가 있는 폴더에 새로운 메모장 파일을 생성했다.
+제목은 local.properties, 내용은 `sdk.dir=C:\\Android\\sdk` 인 것이다.
+
+비슷한 에러가 또 발생해서 tools -> sdk manager -> sdk 플랫폼 중 android 16.0만 체크되어있었는데, android 15까지 모두 체크해주었다.
+
+다시 run -> edit configurations... -> gradle -> tasks: desktopApp:run -> OK 눌러서 다시 실행하니 드디어 로컬 실행이 되었다!
+
+<hr className="invisible mt-1" />
+
+# meterial3 테마 적용을 통한 UI 수정
+
+[코드 수정 내용 링크](https://github.com/ComposeFlow/ComposeFlow/pull/82/files)
+
+같은 이름의 LocalContentColor라도, `androidx.compose.material`과 `androidx.compose.material3`는 서로 다른 테마 시스템에 속한 전혀 다른 값이다. 즉, Material2의 LocalContentColor는 colorScheme를 인식하지 못하고, Material3의 LocalContentColor는 colors를 전제로 동작하지 않는다.
+
+### Material2 (androidx.compose.material.LocalContentColor)
+
+- Material Design 2 기반
+- MaterialTheme.colors에 의존
+- onSurface, onPrimary, onBackground 중심
+- 색상 variant 개념이 단순함
+
+### Material3 (androidx.compose.material3.LocalContentColor)
+
+- Material Design 3 (Material You) 기반
+- MaterialTheme.colorScheme에 의존
+- onSurfaceVariant, onPrimaryContainer 등 세분화된 색상 토큰 사용
+- 다크모드·동적 색상에 최적화
+- `androidx.compose.material.LocalContentColor` 보다 더 다양한 색상 팔레트를 제공한다. Material3는 동적 색상 지원과 최신 디자인 트렌드를 반영한 새로운 색상 체계를 도입했다.
+
+<hr className="invisible mt-1" />
+
+이 이슈의 경우, Material3 컴포넌트는 colorScheme을 기준으로 색을 계산하지만 LocalContentColor는 Material2의 colors를 참조하게 되어 다크모드에서 색상이 올바르게 적용되지 않는 문제가 있었다.
+
+특히 다크모드에서는 Material3가 onSurfaceVariant 같은 색상을 적극적으로 사용하는 반면, Material2의 LocalContentColor는 이를 고려하지 않기 때문에 텍스트 대비가 흐려지거나 예상과 다른 색으로 렌더링되는 문제가 발생했던 것이다.
+
+<hr className="invisible mt-1" />
+
+Material3를 사용하는 프로젝트에서는 androidx.compose.material.\* import가 섞이지 않도록 주의하는 것이 필요하고, LocalContentColor는 테마 시스템과 강하게 결합된 값이므로, UI 컴포넌트와 같은 Material 버전을 사용해야 한다는 점을 배웠다.
+
+기존의 `import androidx.compose.material.LocalContentColor`를 주석 처리하고, `import androidx.compose.material3.LocalContentColor`를 추가해서 Material3 테마 컨텍스트를 동기화했다.
+
+수정해서 아래 명령어로 다시 로컬 실행을 해보니 다크모드에 따라 UI가 잘 바뀌는 것을 확인할 수 있었다.
+
+```
+.\gradlew.bat desktopApp:run --no-daemon
+```
+
+<hr className="invisible mt-1" />
+
+# PR 까지 제대로 보내야 한다
+
+push 다 하고 PR 템플릿을 작성하다가 local.properties.txt 를 포함해서 PR 보낸 것을 발견했다.
+기어코 일을 두 번 하는구나 . .
+
+```
+PS C:\ComposeFlow> git log --oneline --decorate --graph -n 5
+* ada70ef (HEAD -> fix/darkTheme, fork/fix/darkTheme) UI: update locale dark theme style
+* 19514b2 (upstream/main, upstream/HEAD, origin/main, origin/HEAD, main) Support referring existing string resources as AssignableProperty (#79)
+* ec1f17f Fix the case where default screen is deleted when generating the code (#76)
+* 7520cf6 Experiment with the non-spot instance (#73)
+* 6153cb2 Add SECURITY.md (#74)
+*
+PS C:\ComposeFlow> git reset --hard HEAD~1
+HEAD is now at 19514b2 Support referring existing string resources as AssignableProperty (#79)
+
+PS C:\ComposeFlow> git log --oneline --decorate --graph -n 5
+* 19514b2 (HEAD -> fix/darkTheme, upstream/main, upstream/HEAD, origin/main, origin/HEAD, main) Support referring existing string resources as AssignableProperty (#79)
+* ec1f17f Fix the case where default screen is deleted when generating the code (#76)
+* 7520cf6 Experiment with the non-spot instance (#73)
+* 6153cb2 Add SECURITY.md (#74)
+* 37a94e2 Support bulk add/update/delete of multiple string resources (#70)
+```
+
+git log 사용해서 가장 최근 커밋 삭제 -> HEAD가 가장 최근의 커밋을 향하게 됨
+
+```
+PS C:\ComposeFlow> git push --force-with-lease fork fix/darkTheme
+Total 0 (delta 0), reused 0 (delta 0), pack-reused 0 (from 0)
+To https://github.com/yheedev/ComposeFlow.git
+ + ada70ef...19514b2 fix/darkTheme -> fix/darkTheme (forced update)
+
+PS C:\ComposeFlow> git status
+On branch fix/darkTheme
+Your branch is up to date with 'fork/fix/darkTheme'.
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+        modified:   feature/string-editor/src/commonMain/kotlin/io/composeflow/ui/string/StringResourceEditorScreen.kt
+
+no changes added to commit (use "git add" and/or "git commit -a")
+```
+
+` git push --force-with-lease fork fix/darkTheme` 명령어를 통해 push하니까 포크한 저장소에서 PR 팝업은 그대로이지만 눌러보면 `### There isn’t anything to compare.` 라고 나옴,,
+PR 보낸 다음에 충돌이 있을까봐 걱정했는데 새벽 4시에 무사히 PR을 보낼 수 있었다.
+
+<hr className="invisible mt-1" />
+
+# LGTM But... (feat. spotlessApply)
+
+거의 PR을 보내자마자 컨트리뷰터로부터 LGTM 코멘트가 달렸다.
+
+다만 `./gradlew --init-script gradle/init.gradle.kts --no-configuration-cache --continue spotlessApply` 명령어를 실행해서 커밋하지 않으면 병합할 수 없다는 코멘트가 함께 달렸다.
+
+이 명령어는 코드 포맷팅 도구인 Spotless를 사용하여 코드 스타일을 자동으로 적용하는 역할을 한다. spotlessApply 작업은 프로젝트의 코드가 미리 정의된 스타일 가이드라인을 준수하도록 보장한다. 이 과정에서 코드의 들여쓰기, 공백, 줄 바꿈 등 다양한 형식 요소들이 자동으로 수정된다고 한다. 아마 프리티어나 esLint와 비슷한 도구로 추정된다.
+
+나는 로컬에서 해당 명령어를 실행했는데 엄청나게 많은.. 몇 천개의 파일들이 일괄적으로 수정되었다. 이를 당연히 원치 않을 것 같아서 이걸 의도한게 아니라면 되돌리겠다고 코멘트를 남겼다. 곧바로 컨트리뷰터는 되돌려달라는 부탁을 했고, 본인이 포매팅을 수정해서 병합을 하겠다고 코멘트를 남겼다. 너무 고마우시다.......
+
+<hr className="invisible mt-1" />
+
+# 나의 첫 코틀린 오픈소스 기여 후기
+
+웹 환경이 익숙했기 때문에 코틀린 환경은 잘 알지 못했는데, Android Studio 세팅에 몇 시간을 쓴 것 같다. 그래도 익숙한 스택 개발 말고 새로운 개발을 해볼 수 있어서 신선했다. 다음 번에도 이렇게 작은 이슈를 하나씩 해결해보며 내게 익숙한 스택 외에 다른 개발 환경도 도전해보고 싶다는 생각이 들었다.

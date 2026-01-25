@@ -1,0 +1,174 @@
+---
+title: 'Improve Youtube 크롬 확장앱 오픈소스 영한 번역 후기'
+date: '2026. 1. 25.'
+tags: ['OpenSource', 'Translation']
+draft: false
+summary: '스스로 이슈 올려서 번역을 기여한 후기'
+toc: true
+---
+
+> [PR 링크](https://github.com/code-charity/youtube/pull/3102)
+
+[Improve Youtube 크롬 확장 앱 링크](https://chromewebstore.google.com/detail/improve-youtube-%F0%9F%8E%A7-for-yo/bnomihfieiccainjcjblhegjgglakjdd)
+
+평소 이 크롬 확장 앱을 애용하다가, 일부만 한글 번역이 이뤄져있고 2/3이 영어로 이뤄져있음에 불편을 느꼈다.
+
+![Improve Youtube 크롬 확장앱 스크린샷](/static/images/opensource/improveyoutube.png)
+
+그 때 남아있는 스크린샷이 이렇게 화질이 좋지 않지만 그 때 느꼈던 아쉬움을 읽는 사람도 느꼈으면 해서 넣어본다. 위 스크린샷에서 보이는 것처럼, 일부 UI는 한글로 번역이 되어있지만, 나머지 UI는 영어로 남아있어서 일관성이 떨어지고 불편했다. 그래서 직접 번역을 진행해서 PR을 올렸다.
+
+<hr className="invisible mt-1" />
+
+https://github.com/code-charity/youtube/blob/master/_locales/ko/messages.json
+
+Improve Youtube의 저장소에서 한국어 번역 json 파일을 확인해보니, 2025년 8월 기준으로, 1년 반 전이 마지막 번역이었다.
+
+https://github.com/code-charity/youtube/blob/master/_locales/en/messages.json
+
+당시 번역에 참고했던 위 링크의 영어 json 파일을 확인해보니, 마지막 영어 json 파일의 업데이트는 2주 전으로 꽤 최근이었다. 즉, 영어 json 파일은 최근까지도 업데이트가 이뤄지고 있었고, 한국어 json 파일은 1년 반 전에서 멈춰있었던 것이다.
+코드량 자체가 500줄이 차이가 나서, 번역 기여가 유의미하게 도움이 될 것이라고 판단해서 영한 번역에 도전했다.
+
+<hr className="invisible mt-1" />
+
+# 번역 기여 과정
+
+원본 저장소를 fork하고 나서 로컬에 가져올 위치에서 터미널을 열었다.
+
+```
+git clone https://github.com/yheedev/youtube.git // 포크한 저장소 클론하기
+
+cd youtube/_locales
+code .
+```
+
+이렇게 하면 json 파일들만 있는 폴더가 열린다.
+
+json 파일을 둘러보니까 마지막으로 업데이트된 1000줄 아래에 새로운 500줄이 추가 된게 아니라, 1000줄 사이사이에 500줄들이 조금씩 추가된 형태였다. 눈으로만 판단하며 어떤 점이 추가되었는지 파악하기에는 어렵고 정확도가 떨어질 것 같아서 다른 방법들을 찾았다.
+
+<hr className="invisible mt-1" />
+
+https://jsondiff.com/ 에서 en/message.json 과 ko/message.json 모두 복붙하면 되긴 하는데, 400 페이지 이상이 나오고 이 웹페이지를 참고하며 에디터에서 작업하는게 꽤 번거롭다고 느껴졌다. 그래서 IDE에서 확인할 수 있는 방법을 찾았다.
+
+![Improve Youtube 크롬 확장 번역 스크린샷](/static/images/opensource/improveyoutube2.png)
+
+en/message.json 파일 우측 클릭 -> '비교를 위해 선택' 클릭 -> ko/message.json 파일 우측 클릭 -> '비교를 위해 선택' 클릭
+
+그럼 위와 같이 바람직하게 나와서 작업 환경이 한결 쉬워진 것을 확인할 수 있다.
+
+<hr className="invisible mt-1" />
+
+```
+    "ARROWDOWN": {
+        "message": "⇩"
+    },
+    "ARROWLEFT": {
+        "message": "⇦"
+    },
+    "ARROWRIGHT": {
+        "message": "⇨"
+    },
+    "ARROWUP": {
+        "message": "⇧"
+    },
+```
+
+이렇게 영한 번역 필요 없이 특수문자가 있는 부분들은 굳이 ko/message.json에 새롭게 추가하지 않았다.
+
+<hr className="invisible mt-1" />
+
+일일이 복붙해서 번역을 반복하니 속도가 너무 안 나길래, 일단 en/message.json에 있던 원본 내용을 일괄적으로 ko/message.json에 복붙했다. 그 다음에 ko/message.json에서 영어로 된 부분을 처음부터 끝까지 번역했다.
+
+기존 json 파일 사이사이에 새로운 변경 사항이 들어갔기 때문에, 당연히 순서가 과거와 달라진 부분도 다수 존재했다. 이 순서도 최근의 en/message.json 기준으로 바꿔서 서로 대응될 수 있도록 했다. 또한 기존에 번역된 내용은 수정하지 않았고, 최대한 통일성을 염두에 두고 번역했다.
+
+<hr className="invisible mt-1" />
+
+## 'like', 'liked', 'likes' 그리고 'thanks' 번역 고민
+
+```json
+    "like": {
+        "message": "좋아요"
+    },
+    "liked": {
+        "message": "좋아요 표시한 동영상"
+    },
+    "likes": {
+        "message": "Likes"
+    },
+```
+
+likes는 like와 뭐가 다른건지 궁금했다. 크롬 앱을 살펴봐도 likes 부분은 잘 나오지 않았다. 다른 locales 폴더에서 likes를 검색해서 다른 언어에서는 어떻게 번역했는지를 찾고, 챗지피티에 이 언어들이 번역한 likes의 의미를 알려주고 한국어로 번역해달라고 요청했다.
+
+영어
+
+- "like" → Like (버튼)
+- "liked" → Liked (버튼 눌린 상태)
+- "likes" → Likes (복수, 보통 좋아요 수/개수)
+
+인도네시아어
+
+- "like" → Menyukai (좋아하다/좋아요)
+- "liked" → Disukai (좋아요됨)
+- "likes" → Suka (좋아요들 → 좋아요 수)
+
+터키어
+
+- "like" → Beğen (좋아요)
+- "liked" → Beğenildi (좋아요됨)
+- "likes" → Beğeniler (좋아요들 → 좋아요 수)
+
+likes는 좋아요 수, liked는 좋아요 표시한 영상인 것을 알 수 있었다. 한국어로 번역할 때 '좋아요됨'은 좀 어색하니 이 부분은 '좋아요 표시한 동영상'으로 번역했다.
+
+<hr className="invisible mt-1" />
+
+```
+// 에스페란토어
+    "thanks": {
+        "message": "Dankon"
+    },
+```
+
+```
+// 일본어
+    "thanks": {
+        "message": "Thanks"
+    },
+```
+
+```
+// sw_KE
+    "thanks": {
+        "message": "Asante"
+    },
+```
+
+thanks도 마찬가지로 '감사합니다'로 번역 하다가 후원 개념의 슈퍼챗을 기억해내고 다른 번역 파일을 살펴보아서 번역을 진행했다. 한국 유튜브 UI를 살펴봤을 때, Thanks를 그대로 보여주었기 때문에 'Thanks (후원)'이라고 번역했다.
+
+<hr className="invisible mt-1" />
+
+# PR 올리기
+
+```
+git checkout -b translate-ko
+C:\youtube> git add _locales/ko/messages.json
+git commit -m 'update Korean translation'
+git push -u origin translate-ko
+```
+
+번역을 진행했던 사람들이 대체로 작성하는 커밋 메세지를 살펴보고 가이드라인도 살펴보았는데 딱히 언급이 없던 것으로 기억한다. 간단하게 커밋 메세지를 작성하고 push를 진행했다.
+
+```
+- The last Korean translation update was in March 2023, so I have translated the newly added JSON entries into Korean.
+- I tried to follow YouTube Korea's official terminology as much as possible.
+- The translations were aligned with the most recent version of `en/messages.json`.
+- Existing translated content has been kept as is.
+```
+
+'마지막 한국어 번역이 2023년 3월이라 새롭게 번역을 했다. 유튜브 한국의 공식 번역을 따르려 노력했다. en/messages.json의 최신 버전에 맞춰서 번역을 진행했다. 기존에 번역된 내용은 그대로 두었다.' 같은 내용으로 영어로 작성했다. 아무래도 이슈 없이 바로 PR을 올렸기 때문에 컨트리뷰터가 내용을 쉽게 이해할 수 있도록 상세히 작성하는 것이 중요하다고 생각했다.
+
+<hr className="invisible mt-1" />
+
+# 두번째 영한 번역 기여 후기
+
+번역 기여는 맨 처음이 MDN이었고, 두번째가 이번 Improve Youtube 였다. MDN은 PR 올리는 과정이 까다롭고, 참고할 가이드라인도 꽤 많아서 번역 자체에 집중하기 어려웠다. 반면에 이번 Improve Youtube 번역은 json 파일만 수정하면 된다는 점에서 번역에 집중할 수 있었다.
+
+MDN 같은 경우에는 병합까지 1달이 넘게 소요되었는데, Improve Youtube 같은 경우에는 올린지 하루 만에 빠른 병합을 해줘서 보람있었다. 이후에 Improve Youtube 크롬 앱을 쓰면서 내 번역이 반영된 것을 보면서 꽤 기분이 좋기도 했다. 이후 Improve youtube의 조직인 code-charity에 초대가 되었는데 묘하게 뿌듯했다; 다음에 또 번역할게 나오면 최근 버전으로 업데이트 해보고 싶다.

@@ -64,25 +64,15 @@ toc: true
 
 [https://yheedev.vercel.app/ko/blog/opensource/mdn-translate](https://yheedev.vercel.app/ko/blog/opensource/mdn-translate)
 
-이건 블로그 포스트로 대체한다. 단순히 번역에 필요한 마크다운 파일 수정만 필요한게 아니라, PR 까지 수월하게 올리려면 자잘한 세팅들이 필요했다. 세팅이 좀 까다로웠는데 VSCode 외에 Visual Studio, C++, 파이썬 등을 재설치하고 세팅하는 것이 필요했던 것이 기억난다.
+단순히 번역에 필요한 마크다운 파일 수정만 필요한게 아니라, PR 까지 수월하게 올리려면 자잘한 세팅들이 필요했다. 세팅이 좀 까다로웠는데 VSCode 외에 Visual Studio, C++, 파이썬 등을 재설치하고 세팅하는 것이 필요했던 것이 기억난다.
 
 ## 2) ComposeFlow 코틀린 앱 다크테마 UI 수정 (2025. 08.)
 
-[처음 발견한 이슈 링크](https://github.com/ComposeFlow/ComposeFlow/issues/78)
+[https://yheedev.vercel.app/ko/blog/opensource/kotlin-ui](https://yheedev.vercel.app/ko/blog/opensource/kotlin-ui)
 
-https://goodfirstissues.com/ 에서 이 저장소의 이슈를 발견했다. ComposeFlow 오픈소스는 compose multiplatform 기반 비주얼 앱 빌더이다. 앱 UI를 드래그, 드롭해서 쉽게 생성할 수 있고, AI 에이전트 도움을 받아서 실제 코틀린 코드까지 자동 생성 가능한 앱 제작 툴이다.
+[goodfirstissues.com](https://goodfirstissues.com/)에서 찾았던 이슈이다. 이 이슈도 비슷하게 디버깅 보다는 Android Studio 세팅 자체가 복잡했던게 기억에 남는다.
 
-이슈만 훑어보고 나서 처음에는 간단하게 UI 부분만 수정하면 될 줄 알았는데, 알고보니 코틀린 99.7%로 이뤄져있는 앱인 것을 알아챘다. 덕분에 살면서 처음으로 코틀린으로 코딩하는 경험을 해볼 수 있었다.
-
-### Android Studio 설치하기
-
-코틀린 앱 실행을 위해 Android Studio를 설치했다. VSCode로는 개발 자체는 가능하지만 로컬 실행이 불가능하다고 해서, 제대로 UI가 바뀌는지를 파악하기 위해 Android Studio를 설치했다. 도중에 이런 에러가 발생했었다.
-
-```
-Your Android SDK location contains non-ASCII characters.
-```
-
-이 에러는 `C:\Users\윤희은\...` 같이 한글이 들어간 경로에서 설치하다보니 생긴 에러였다. C 드라이브에 Android 폴더를 생성한 뒤에 `C:\Android` 위치로 옮겨주니 설치가 잘 되었다. 이후 한국어로 만든 계정을 영어로 바꾸고, Android Studio를 재시작하니 문제없이 잘 실행되었다.
+## 3) ImproveYoutube 크롬 확장앱 영한 번역 (2025. 08.)
 
 ## 오픈소스의 장점
 

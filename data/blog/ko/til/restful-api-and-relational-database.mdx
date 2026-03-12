@@ -1,0 +1,199 @@
+---
+title: 'RestFul API와 관계형 데이터베이스'
+date: '2026-03-12'
+tags: ['TIL']
+draft: false
+summary: 'API 20개를 연결해봤으니 이제는 원리부터 제대로 정리해보자'
+toc: true
+---
+
+# 1. 관계형 데이터 베이스 (Relational Database)란?
+
+관계형 데이터 베이스는 데이터를 표(Table) 형태로 저장하고, 표와 표 사이의 관계(Relation)를 통해 데이터를 연결·관리한다. 줄여서 RDB라고 부르고, 대표적으로 MySQL, PostgreSQL, SQLite 등이 있다. 엑셀 시트 여러 개가 서로 연결된 것이라고 생각하면 쉽다.
+
+### 주요 개념 4가지
+
+1. 테이블 (Table): 데이터를 저장하는 표. 행(Row)과 열(Column)로 구성된다. 주로 user, product, order 같은 실체(Entity)를 나타낸다.
+
+- 행(Row): 테이블에서 하나의 레코드(Record)를 나타낸다. 예를 들어, user 테이블에서 한 행은 한 명의 사용자를 나타낸다.
+- 열(Column): 테이블에서 하나의 속성(Attribute)을 나타낸다. 예를 들어, user 테이블에서 name, email, age 등이 열이 될 수 있다.
+
+2. 기본 키 (Primary Key): 테이블에서 각 행을 고유하게 식별하는 열. 예를 들어, user 테이블에서는 user_id가 기본 키가 될 수 있다.
+3. 외래 키 (Foreign Key): 다른 테이블의 기본 키를 참조하는 열. 예를 들어, order 테이블에서 user_id가 user 테이블의 user_id를 참조하는 외래 키가 될 수 있다.
+4. 정규화 (Normalization): 데이터 중복을 줄이고 데이터 무결성을 유지하기 위해 테이블을 구조화하는 과정. 일반적으로 1NF, 2NF, 3NF 등의 단계가 있다.
+
+### 테이블 관계 시각화
+
+실제로 서비스에서 가장 많이 보게 되는 구조. users와 posts가 1:N 관계로 연결된 예시이다.
+
+<div className="flex flex-col gap-0 md:flex-row md:gap-20">
+
+<div>
+
+**users**
+
+| 키  | 컬럼  | 값                  |
+| --- | ----- | ------------------- |
+| PK  | id    | 1                   |
+|     | name  | "Hee"               |
+|     | email | "yheedev@gmail.com" |
+| PK  | id    | 2                   |
+|     | name  | "Alice"             |
+
+</div>
+
+<div>
+
+**posts**
+
+| 키  | 컬럼    | 값               |
+| --- | ------- | ---------------- |
+| PK  | id      | 101              |
+| FK  | user_id | 1                |
+|     | title   | "첫 블로그 글"   |
+| PK  | id      | 102              |
+| FK  | user_id | 1                |
+|     | title   | "React, Next.js" |
+
+</div>
+
+</div>
+
+→ posts.user_id = 1은 users.id = 1인 "Hee"가 작성한 글임을 의미한다. 이 연결 고리가 외래키다.
+
+> 관계의 종류: 1:1 (사용자:프로필), 1:N (사용자:게시글), N:M (게시글:태그 — 중간 테이블 필요)
+
+<Spacer />
+
+# 2. REST와 RESTful API
+
+REST(Representational State Transfer)는 웹의 아키텍처 스타일이다. 2000년 로이 필딩(Roy Fielding)이 박사 논문에서 정의했다. API를 설계하는 규칙 모음이라고 이해하면 된다.
+
+RESTful API는 REST 원칙을 따르도록 설계된 API를 말한다. "이 API는 REST스럽게 잘 만들어졌다"는 뜻이다.
+
+![이상적인 RESTful API 구조](/static/images/til/restfulapi.webp)
+[이미지 출처](https://designgurus.substack.com/p/system-design-essentials-understanding)
+
+<Spacer />
+
+### REST의 6가지 원칙 (간단 버전)
+
+1. Stateless (무상태): 서버는 클라이언트 상태를 저장하지 않는다. 요청마다 필요한 정보를 모두 담아 보낸다.
+2. Uniform Interface (일관된 인터페이스): 리소스는 URL로 식별하고, HTTP 메서드로 행위를 표현한다.
+3. Client-Server 분리 UI(클라이언트)와 데이터 저장(서버)은 독립적으로 발전 가능하다.
+4. Cacheable (캐시 가능): 응답에 캐시 가능 여부를 명시해 성능을 향상시킬 수 있다.
+5. Layered System (계층 구조): 클라이언트는 서버 내부 구조를 몰라도 된다. 프록시, 로드밸런서 등 중간 계층 존재 가능.
+6. Code on Demand (선택): 서버에서 실행 가능한 코드(스크립트 등)를 클라이언트에 전달할 수 있다.
+
+<Spacer />
+
+### URL 설계 원칙
+
+RESTful API에서 URL은 명사(리소스)로, 행위는 HTTP 메서드로 표현한다.
+
+- Good (RESTful)
+  - GET /users → 모든 사용자 조회
+  - GET /users/1 → id=1 사용자 조회
+  - POST /users → 사용자 생성
+  - PUT /users/1 → id=1 사용자 전체 수정
+  - PATCH /users/1 → id=1 사용자 일부 수정
+  - DELETE /users/1 → id=1 사용자 삭제
+
+- Bad (RESTful이 아님)
+  - GET /getUser → 동사 사용 금지
+  - POST /deleteUser/1 → 메서드와 URL 역할 충돌
+  - GET /user_create → 스네이크케이스 + 동사
+
+<Spacer />
+
+# 3. HTTP 메서드 정리
+
+프론트엔드에서 API를 호출할 때 반드시 알아야 하는 5가지이다.
+
+- GET: **데이터 조회**. body 없음. URL에 파라미터를 담을 수 있다. 캐시 가능. 주로 게시글 목록, 사용자 정보 조회에 사용된다.
+- POST: **데이터 생성**. body에 데이터를 담을 수 있고, body에 데이터를 담지 않아도 된다. 주로 /logout 같은 POST 요청에 body가 없다. 매번 실행 시 새 리소스를 생성한다. 주로 회원가입, 게시글 작성 등에 사용된다.
+- PUT: **데이터 전체 수정**. body에 데이터를 담는다. 멱등성 보장. 주로 게시글 전체 수정, 사용자 정보 전체 수정 등에 사용된다.
+- PATCH: **데이터 일부 수정**. body에 데이터를 담는다. 멱등성 보장. 주로 게시글 제목 수정, 마이페이지의 일부 정보 수정 등에 사용된다.
+- DELETE: **데이터 삭제**. body 없음. URL에 파라미터를 담을 수 있다. 멱등성 보장. 주로 게시글 삭제, 회원 탈퇴 등에 사용된다.
+
+<Spacer />
+
+### 멱등성이란?
+
+멱등성이란 같은 요청을 여러 번 보내도 결과가 동일한 성질이다.
+멱등성을 갖고 있는 요청이 GET, PUT, DELETE이고, 멱등성을 갖지 않는 요청은 POST, PATCH에 해당한다. 즉, POST로 결제를 중복 요청하면 두 번 결제가 이뤄진다. 이 경우 클라이언트에서 중복 제출 방지 처리가 필요하다.
+
+<Spacer />
+
+### RESTful API 예시
+
+```
+// 구똑(구독 관리) 서비스 예시
+GET    /subscriptions           → 내 구독 목록
+POST   /subscriptions           → 새 구독 추가
+PATCH  /subscriptions/:id        → 결제일, 금액 등 일부 수정
+DELETE /subscriptions/:id        → 구독 삭제
+```
+
+<Spacer />
+
+# 4. 상태 코드 읽는 법
+
+| 코드                        | 의미                   | 프론트 대응                  |
+| --------------------------- | ---------------------- | ---------------------------- |
+| `200 OK`                    | 요청 성공              | 데이터 렌더링                |
+| `201 Created`               | 리소스 생성 성공       | 성공 toast, 목록 갱신        |
+| `204 No Content`            | 성공, 반환 데이터 없음 | DELETE 후 로컬 상태에서 제거 |
+| `400 Bad Request`           | 잘못된 요청 형식       | 입력 유효성 검사 메시지 표시 |
+| `401 Unauthorized`          | 인증 필요              | 로그인 페이지로 리다이렉트   |
+| `403 Forbidden`             | 권한 없음              | 접근 불가 메시지 표시        |
+| `404 Not Found`             | 리소스 없음            | 404 페이지 또는 안내 메시지  |
+| `500 Internal Server Error` | 서버 내부 오류         | "잠시 후 다시 시도" 안내     |
+
+401 vs 403 혼동을 주의하자. 401은 "로그인 안 됨"을 의미하고, 403은 "로그인은 됐는데 권한이 없음"의 차이이다.
+
+<Spacer />
+
+# 5. RDB와 RESTful API는 어떻게 연결될까?
+
+클라이언트가 API를 호출하면 백엔드는 DB에서 데이터를 가져와 응답한다.
+
+![GET 요청 전체 흐름](/static/images/til/getapi.jpg)
+
+<Spacer />
+
+### URL 파라미터 ↔ DB 쿼리 연결 구조
+
+```
+// URL: GET /posts?user_id=1&limit=10&page=2
+//           ↓
+// 백엔드에서 이걸로 SQL을 만든다:
+SELECT * FROM posts
+WHERE user_id = 1      -- query param
+ORDER BY created_at DESC
+LIMIT 10               -- limit param
+OFFSET 10;             -- (page-1) * limit
+```
+
+<Spacer />
+
+# 6. 프론트엔드 관점에서 정리하기
+
+구똑(구독 관리 서비스)에서 백엔드 API 20개를 연결했던 경험을 지금 배운 개념으로 다시 읽어보자.
+
+| 당시 수행했던 것들 | 메서드                     | RESTFUL 관점                                                                                      |
+| ------------------ | -------------------------- | ------------------------------------------------------------------------------------------------- |
+| 구독 목록 불러오기 | `GET`/subscriptions        | 리소스를 명사로, 조회는 GET                                                                       |
+| 새 구독 추가       | `POST` /subscriptions      | body에 데이터 담아 생성 — 201 Created 기대                                                        |
+| 결제일 수정        | `PATCH`/subscriptions/:id  | 멱등성 보장. 일부 수정이니 PATCH를 사용하는 것이 옳다. PUT이었으면 나머지 필드가 날아갔을 것이다. |
+| 구독 삭제          | `DELETE`/subscriptions/:id | 멱등성 보장. 성공 시 204 No Content — body 없이 성공 신호만                                       |
+
+<Spacer />
+
+### 그 때 헷깔렸던 개념들을 설명해보자
+
+- PUT과 PATCH의 차이: 바꿀 필드만 보낼거면 PATCH, PUT은 나머지 필드를 명시적으로 다 보내야한다.
+- 삭제 후 응답이 비어있는데 정상인가? : 204 No Content는 성공이지만 반환할 데이터가 없다는 뜻이다. DELETE 요청은 보통 204 No Content로 응답한다.
+- 에러인데 왜 콘솔에 빨간 줄이 안 뜰까? : fetch는 4xx/5xx 상태 코드를 던져주지 않는다. `res.ok`를 직접 체크해야 에러를 잡을 수 있다.
+
+<Spacer />

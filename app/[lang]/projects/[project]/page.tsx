@@ -24,7 +24,7 @@ export const generateStaticParams = async () => {
   const projectKeys = Object.keys(projectCounts)
   const paths = projectKeys.flatMap((project) =>
     (LANGS as readonly string[]).map((lang) => ({
-      project: encodeURIComponent(project),
+      project,
       lang,
     }))
   )

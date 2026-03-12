@@ -515,3 +515,29 @@ import { logoutAction } from '#actions/authAction'
 3. UI 컴포넌트에서 `<form action={handleLogout}>` 으로 서버 액션 사용,,
 
 이렇게 했는데 개발자 도구의 네트워크에서 아무 요청이 이뤄지지 않았다. 어떤 때에는 `localhost:3000/mypage` 로 요청이 보내지고 500 상태가 반환되었다.
+
+원인을 찾아보니 `<form action={...}>` 에는 `'use server'`가 선언된 서버 액션 함수나 URL 문자열만 전달할 수 있다. `handleLogout`은 `startTransition`으로 감싼 일반 클라이언트 함수라 서버 액션이 아니었고, Next.js가 이를 서버 액션으로 직렬화하려다 실패해서 500이 발생한 것이었다.
+
+로그아웃 이후 toast 알림이나 `router.push`, zustand `logout()` 같은 클라이언트 사이드 처리가 필요하기 때문에 `form action`에 직접 서버 액션을 넘기는 방식은 맞지 않는다. 이 경우에는 `form` 래퍼를 제거하고 `onClick`으로 바꾸는 게 적합했다.
+
+```tsx
+<AlertDialogAction asChild>
+  <button type="button" onClick={handleLogout}>
+    로그아웃
+  </button>
+</AlertDialogAction>
+```
+
+`form action`은 순수하게 서버 액션만 실행하고 끝나는 경우 (닉네임 변경처럼 클라이언트 후처리가 없는 경우)에 어울리고, 로그아웃처럼 서버 액션 실행 후 클라이언트 상태 변경이나 라우팅이 따라오는 경우는 `onClick` + `startTransition`이 맞는 방식이었다.
+
+<hr className="invisible mt-1" />
+
+## 마무리
+
+이번 마이그레이션을 하면서 CSR과 SSR의 경계가 어디에 있는지를 직접 부딪히며 정리할 수 있었다.
+
+- 페이지 최초 진입 시 서버에서 데이터를 fetch해서 렌더링하는 것이 SSR의 핵심이고, 이후 버튼 클릭이나 토글 같은 클라이언트 상호작용은 CSR로 처리하는 게 자연스럽다.
+- 서버 액션은 API 라우트 없이 서버 로직을 실행할 수 있어서 편리하지만, `form action`에 전달할 수 있는 것은 서버 액션 함수뿐이라는 제약이 있다.
+- `useMutation`, `useQuery` 같은 React Query 훅은 CSR 기반 도구라는 것을 이번에 새삼 실감했다. SSR 구조에서는 서버 컴포넌트에서 직접 fetch하고, 클라이언트 상태는 zustand 같은 전역 상태로 관리하는 흐름이 더 맞는다.
+
+완전히 SSR로 다 뜯어고치진 못했지만, 어디서 서버를 쓰고 어디서 클라이언트를 써야 하는지 감이 생긴 것 같다.

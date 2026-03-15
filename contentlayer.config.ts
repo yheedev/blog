@@ -149,14 +149,35 @@ async function createProjectCount(allBlogs) {
   writeFileSync('./app/project-data.json', formatted)
 }
 
+function stripMdx(raw: string): string {
+  return raw
+    .replace(/^---[\s\S]*?---/, '') // frontmatter
+    .replace(/```[\s\S]*?```/g, ' ') // code blocks
+    .replace(/<[^>]+>/g, ' ') // JSX/HTML tags
+    .replace(/`[^`]+`/g, ' ') // inline code
+    .replace(/!\[.*?\]\(.*?\)/g, '') // images
+    .replace(/\[.*?\]\(.*?\)/g, '$1') // links (keep text)
+    .replace(/[#*_~>|\\]/g, ' ') // markdown symbols
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
 function createSearchIndex(allBlogs) {
   if (
     siteMetadata?.search?.provider === 'kbar' &&
     siteMetadata.search.kbarConfig.searchDocumentsPath
   ) {
+    const coreContent = allCoreContent(sortPosts(allBlogs))
+    const postsWithBody = coreContent.map((post) => {
+      const blog = allBlogs.find((b) => b.slug === post.slug && b.lang === post.lang)
+      return {
+        ...post,
+        bodyRaw: blog ? stripMdx(blog.body.raw) : '',
+      }
+    })
     writeFileSync(
       `public/${path.basename(siteMetadata.search.kbarConfig.searchDocumentsPath)}`,
-      JSON.stringify(allCoreContent(sortPosts(allBlogs)))
+      JSON.stringify(postsWithBody)
     )
   }
 }

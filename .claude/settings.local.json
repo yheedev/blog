@@ -17,7 +17,11 @@
       "Bash(ls:*)",
       "Bash(find:*)",
       "Bash(yarn remove:*)",
-      "Bash(git stash:*)"
+      "Bash(git stash:*)",
+      "Bash(grep -r \"kbar\\\\|KBar\" /c/work/Personal/blog01/app /c/work/Personal/blog01/components --include=*.tsx --include=*.ts)",
+      "Bash(jq .[0])",
+      "Bash(jq .[0] /c/work/Personal/blog01/public/search.json)",
+      "Bash(python3 -c \"import json; print\\(json.dumps\\(json.load\\(open\\(''''/c/work/Personal/blog01/public/search.json''''\\)\\)[:1], indent=2\\)\\)\")"
     ],
     "deny": [],
     "ask": []

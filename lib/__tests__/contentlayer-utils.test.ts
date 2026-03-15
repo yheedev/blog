@@ -11,14 +11,14 @@ jest.mock('child_process')
 describe('getGitTimestamps', () => {
   // Note: We're testing the function logic by recreating it here since it's not exported
   // In a real scenario, you'd want to export this function for better testability
-  
+
   const getGitTimestamps = (filePath: string): { created: string; modified: string } => {
     try {
       const created = execSync(`git log --follow --format=%aI --reverse "${filePath}" | head -1`)
         .toString()
         .trim()
       const modified = execSync(`git log -1 --format=%aI "${filePath}"`).toString().trim()
-      
+
       return {
         created: created || new Date().toISOString(),
         modified: modified || new Date().toISOString(),
@@ -37,13 +37,13 @@ describe('getGitTimestamps', () => {
     it('should return creation and modification dates from git history', () => {
       const mockCreated = '2023-01-15T10:30:00Z'
       const mockModified = '2023-12-20T14:45:00Z'
-      
+
       ;(execSync as jest.Mock)
         .mockReturnValueOnce(Buffer.from(mockCreated + '\n'))
         .mockReturnValueOnce(Buffer.from(mockModified + '\n'))
-      
+
       const result = getGitTimestamps('data/blog/test-post.mdx')
-      
+
       expect(result.created).toBe(mockCreated)
       expect(result.modified).toBe(mockModified)
       expect(execSync).toHaveBeenCalledTimes(2)
@@ -58,9 +58,9 @@ describe('getGitTimestamps', () => {
       ;(execSync as jest.Mock)
         .mockReturnValueOnce(Buffer.from(mockDate + '\n'))
         .mockReturnValueOnce(Buffer.from(mockDate + '\n'))
-      
+
       const result = getGitTimestamps('data/blog/post with spaces.mdx')
-      
+
       expect(result.created).toBe(mockDate)
       expect(result.modified).toBe(mockDate)
     })
@@ -70,9 +70,9 @@ describe('getGitTimestamps', () => {
       ;(execSync as jest.Mock)
         .mockReturnValueOnce(Buffer.from(`  ${mockDate}  \n\n`))
         .mockReturnValueOnce(Buffer.from(`\n${mockDate}\n`))
-      
+
       const result = getGitTimestamps('data/blog/test.mdx')
-      
+
       expect(result.created).toBe(mockDate)
       expect(result.modified).toBe(mockDate)
     })
@@ -81,14 +81,16 @@ describe('getGitTimestamps', () => {
       ;(execSync as jest.Mock)
         .mockReturnValueOnce(Buffer.from(''))
         .mockReturnValueOnce(Buffer.from(''))
-      
+
       const beforeTest = new Date().toISOString()
       const result = getGitTimestamps('data/blog/new-file.mdx')
       const afterTest = new Date().toISOString()
-      
+
       expect(result.created).toBeDefined()
       expect(result.modified).toBeDefined()
-      expect(new Date(result.created).getTime()).toBeGreaterThanOrEqual(new Date(beforeTest).getTime())
+      expect(new Date(result.created).getTime()).toBeGreaterThanOrEqual(
+        new Date(beforeTest).getTime()
+      )
       expect(new Date(result.modified).getTime()).toBeLessThanOrEqual(new Date(afterTest).getTime())
     })
   })
@@ -98,15 +100,17 @@ describe('getGitTimestamps', () => {
       ;(execSync as jest.Mock).mockImplementation(() => {
         throw new Error('Git command failed')
       })
-      
+
       const beforeTest = new Date().toISOString()
       const result = getGitTimestamps('nonexistent-file.mdx')
       const afterTest = new Date().toISOString()
-      
+
       expect(result.created).toBeDefined()
       expect(result.modified).toBeDefined()
       expect(result.created).toBe(result.modified)
-      expect(new Date(result.created).getTime()).toBeGreaterThanOrEqual(new Date(beforeTest).getTime())
+      expect(new Date(result.created).getTime()).toBeGreaterThanOrEqual(
+        new Date(beforeTest).getTime()
+      )
       expect(new Date(result.modified).getTime()).toBeLessThanOrEqual(new Date(afterTest).getTime())
     })
 
@@ -114,9 +118,9 @@ describe('getGitTimestamps', () => {
       ;(execSync as jest.Mock).mockImplementation(() => {
         throw new Error('git: command not found')
       })
-      
+
       const result = getGitTimestamps('data/blog/test.mdx')
-      
+
       expect(result.created).toBeDefined()
       expect(result.modified).toBeDefined()
       expect(result.created).toBe(result.modified)
@@ -126,9 +130,9 @@ describe('getGitTimestamps', () => {
       ;(execSync as jest.Mock).mockImplementation(() => {
         throw new Error('Permission denied')
       })
-      
+
       const result = getGitTimestamps('data/blog/restricted.mdx')
-      
+
       expect(result).toHaveProperty('created')
       expect(result).toHaveProperty('modified')
       expect(typeof result.created).toBe('string')
@@ -141,9 +145,9 @@ describe('getGitTimestamps', () => {
       ;(execSync as jest.Mock)
         .mockReturnValueOnce(Buffer.from(''))
         .mockReturnValueOnce(Buffer.from(''))
-      
+
       const result = getGitTimestamps('data/blog/brand-new.mdx')
-      
+
       expect(result.created).toBeTruthy()
       expect(result.modified).toBeTruthy()
     })
@@ -151,26 +155,23 @@ describe('getGitTimestamps', () => {
     it('should handle renamed files (--follow flag)', () => {
       const mockCreated = '2022-01-01T00:00:00Z'
       const mockModified = '2023-12-01T00:00:00Z'
-      
+
       ;(execSync as jest.Mock)
         .mockReturnValueOnce(Buffer.from(mockCreated))
         .mockReturnValueOnce(Buffer.from(mockModified))
-      
+
       const result = getGitTimestamps('data/blog/renamed-post.mdx')
-      
-      expect(execSync).toHaveBeenCalledWith(
-        expect.stringContaining('--follow')
-      )
+
+      expect(execSync).toHaveBeenCalledWith(expect.stringContaining('--follow'))
       expect(result.created).toBe(mockCreated)
     })
 
     it('should return valid ISO 8601 date strings', () => {
       const mockDate = '2023-06-15T14:30:00Z'
-      ;(execSync as jest.Mock)
-        .mockReturnValue(Buffer.from(mockDate))
-      
+      ;(execSync as jest.Mock).mockReturnValue(Buffer.from(mockDate))
+
       const result = getGitTimestamps('data/blog/test.mdx')
-      
+
       expect(() => new Date(result.created)).not.toThrow()
       expect(() => new Date(result.modified)).not.toThrow()
       expect(new Date(result.created).toISOString()).toBe(mockDate)

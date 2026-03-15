@@ -8,13 +8,7 @@ import { slug } from 'github-slugger'
 describe('Tag System Integration', () => {
   describe('Tag slugification consistency', () => {
     it('should slug tags consistently across components', () => {
-      const testTags = [
-        'JavaScript',
-        'machine learning',
-        'C++',
-        'Web Development',
-        'React.js',
-      ]
+      const testTags = ['JavaScript', 'machine learning', 'C++', 'Web Development', 'React.js']
 
       testTags.forEach((tag) => {
         const slugged = slug(tag)
@@ -52,11 +46,7 @@ describe('Tag System Integration', () => {
 
       const urls = languages.map((lang) => `/${lang}/tags/${slug(tag)}`)
 
-      expect(urls).toEqual([
-        '/ko/tags/javascript',
-        '/en/tags/javascript',
-        '/ja/tags/javascript',
-      ])
+      expect(urls).toEqual(['/ko/tags/javascript', '/en/tags/javascript', '/ja/tags/javascript'])
     })
 
     it('should handle encoded tags in URLs', () => {
@@ -129,9 +119,7 @@ describe('Tag System Integration', () => {
 
       const filtered = posts.filter(
         (post) =>
-          post.lang === 'en' &&
-          !post.draft &&
-          post.tags.map((t) => slug(t)).includes('javascript')
+          post.lang === 'en' && !post.draft && post.tags.map((t) => slug(t)).includes('javascript')
       )
 
       expect(filtered).toHaveLength(1)

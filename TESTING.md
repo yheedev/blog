@@ -25,10 +25,10 @@ npm run test:coverage # Coverage report
 
 ## Test Commands
 
-| Command | Description |
-|---------|-------------|
-| `npm test` | Run all tests |
-| `npm run test:watch` | Watch mode |
+| Command                 | Description     |
+| ----------------------- | --------------- |
+| `npm test`              | Run all tests   |
+| `npm run test:watch`    | Watch mode      |
 | `npm run test:coverage` | Coverage report |
 
 ## Writing Tests

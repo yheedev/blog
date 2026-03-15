@@ -34,7 +34,11 @@ jest.mock('@/components/SectionContainer', () => {
 
 jest.mock('@/components/Tag', () => {
   return function Tag({ text, lang }) {
-    return <span data-testid="tag" data-lang={lang}>{text}</span>
+    return (
+      <span data-testid="tag" data-lang={lang}>
+        {text}
+      </span>
+    )
   }
 })
 

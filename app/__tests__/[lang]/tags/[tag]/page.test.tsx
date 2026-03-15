@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 /**
  * Unit tests for TagPage component
  * Tests tag filtering, metadata generation, and static path generation

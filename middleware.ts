@@ -22,6 +22,12 @@ export function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
+  // 언어 세그먼트 없이 운영하는 전역 페이지
+  const LANG_FREE_PATHS = ['/guest']
+  if (LANG_FREE_PATHS.some((p) => pathname === p || pathname.startsWith(p + '/'))) {
+    return NextResponse.next()
+  }
+
   // 이미 언어 경로가 포함되어 있는지 확인
   const pathnameHasLang = SUPPORTED_LANGS.some(
     (lang) => pathname.startsWith(`/${lang}/`) || pathname === `/${lang}`

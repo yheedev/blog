@@ -7,13 +7,15 @@ import Link from './Link'
 import headerNavLinks from '@/data/headerNavLinks'
 import { usePathname } from 'next/navigation'
 import { Menu, X } from 'lucide-react'
+import { LANGS } from '@/lib/types'
 
 const MobileNav = () => {
   const [navShow, setNavShow] = useState(false)
   const navRef = useRef(null)
 
   const pathname = usePathname()
-  const lang = pathname.split('/')[1] || 'ko'
+  const segment = pathname.split('/')[1]
+  const lang = LANGS.includes(segment as (typeof LANGS)[number]) ? segment : 'ko'
 
   const navLinks = headerNavLinks(lang)
 

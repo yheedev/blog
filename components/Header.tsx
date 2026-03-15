@@ -9,6 +9,7 @@ import SearchButton from './SearchButton'
 import LanguageSwitcher from './LanguageSwitcher'
 import { usePathname } from 'next/navigation'
 import { Suspense } from 'react'
+import { LANGS } from '@/lib/types'
 
 const Header = () => {
   let headerClass =
@@ -18,7 +19,8 @@ const Header = () => {
   }
 
   const pathname = usePathname()
-  const lang = pathname.split('/')[1] || 'ko'
+  const segment = pathname.split('/')[1]
+  const lang = LANGS.includes(segment as (typeof LANGS)[number]) ? segment : 'ko'
   const navLinks = headerNavLinks(lang)
 
   return (

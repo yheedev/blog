@@ -2722,7 +2722,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@giscus/react@npm:^3.0.0":
+"@giscus/react@npm:^3.0.0, @giscus/react@npm:^3.1.0":
   version: 3.1.0
   resolution: "@giscus/react@npm:3.1.0"
   dependencies:
@@ -14253,6 +14253,7 @@ __metadata:
   dependencies:
     "@eslint/eslintrc": ^3.2.0
     "@eslint/js": ^9.16.0
+    "@giscus/react": ^3.1.0
     "@headlessui/react": 2.2.0
     "@next/bundle-analyzer": 15.2.4
     "@svgr/webpack": ^8.0.1

@@ -11,7 +11,7 @@ export default function GuestPage() {
           Guestbook
         </h1>
         <p className="text-lg leading-7 text-gray-500 dark:text-gray-400">
-          좋은 말을 남겨주세요 :)
+          leave comments as much as you love me!!
         </p>
       </div>
       <div className="pt-8 pb-8">

@@ -1,0 +1,1049 @@
+---
+title: mypkmn 라이트하우스 전 항목 100점 달성한 기록
+date: '2026-04-08'
+tags: ['React', 'Next.js', 'TypeScript']
+projects: ['My Pokemon Type']
+draft: false
+summary: 'mypkmn 라이트하우스 전 항목 100점 달성한 기록'
+toc: true
+---
+
+<div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+  <img
+    src="/static/images/my-pokemon-type/lighthouse1.png"
+    alt="라이트 하우스 첫번째 측정"
+    style={{ width: 'calc(50% - 0.375rem)', minWidth: '280px', height: 'auto' }}
+  />
+  <img
+    src="/static/images/my-pokemon-type/lighthouse7.png"
+    alt="라이트 하우스 마지막 측정"
+    style={{ width: 'calc(50% - 0.375rem)', minWidth: '280px', height: 'auto' }}
+  />
+</div>
+
+왼쪽이 마이그레이션을 마친 직후이고, 오른쪽이 라이트하우스 점수를 전 항목 100점을 달성한 상태이다.
+
+앞으로 라이트하우스 개선을 할 때 이 글을 참고하기 위해 이 과정을 자세히 기록해보았다.
+
+<Spacer />
+
+# 📍 PERFORMANCE 1차 개선: 96점 → 99점
+
+## 1. INSIGHT - Network dependency tree
+
+```
+Network dependency tree
+
+[Avoid chaining critical requests](https://developer.chrome.com/docs/performance/insights/network-dependency-tree?utm_source=lighthouse&utm_medium=devtools) by reducing the length of chains, reducing the download size of resources, or deferring the download of unnecessary resources to improve page load.LCPUnscored
+
+Maximum critical path latency: **1,702 ms**
+Initial Navigation
+
+[/ko](https://mypokemontype.vercel.app/ko)
+(mypokemontype.vercel.app)
+ - 569 ms, 3.72 KiB
+[…chunks/3436fc2e6bc8ebc7.css](https://mypokemontype.vercel.app/_next/static/chunks/3436fc2e6bc8ebc7.css)
+(mypokemontype.vercel.app)
+ - 744 ms, 25.03 KiB
+[…media/8a497…c8748-s.8a87c869.woff2](https://mypokemontype.vercel.app/_next/static/media/8a497761829c8748-s.8a87c869.woff2)
+(mypokemontype.vercel.app)
+ - 1,702 ms, 15.98 KiB
+[…media/71c14456d24a4b84-s.3da6aac1.woff2](https://mypokemontype.vercel.app/_next/static/media/71c14456d24a4b84-s.3da6aac1.woff2)
+(mypokemontype.vercel.app)
+ - 1,701 ms, 16.09 KiB
+[…media/7ea3631c3cde394b-s.402b40c8.woff2](https://mypokemontype.vercel.app/_next/static/media/7ea3631c3cde394b-s.402b40c8.woff2)
+(mypokemontype.vercel.app)
+ - 1,701 ms, 16.27 KiB
+[…media/6c77187342e37cf9-s.9757c3f7.woff2](https://mypokemontype.vercel.app/_next/static/media/6c77187342e37cf9-s.9757c3f7.woff2)
+(mypokemontype.vercel.app)
+ - 1,692 ms, 16.33 KiB
+[…media/d2991efcbcf9b9c8-s.5e410f5e.woff2](https://mypokemontype.vercel.app/_next/static/media/d2991efcbcf9b9c8-s.5e410f5e.woff2)
+(mypokemontype.vercel.app)
+ - 1,692 ms, 15.98 KiB
+[…media/d8cd782fa9ae3d4d-s.ca9a624c.woff2](https://mypokemontype.vercel.app/_next/static/media/d8cd782fa9ae3d4d-s.ca9a624c.woff2)
+(mypokemontype.vercel.app)
+ - 1,691 ms, 14.55 KiB
+[…media/2206cbe4f1f4c69d-s.30439db2.woff2](https://mypokemontype.vercel.app/_next/static/media/2206cbe4f1f4c69d-s.30439db2.woff2)
+(mypokemontype.vercel.app)
+ - 1,683 ms, 14.27 KiB
+[…media/2da868b477e86450-s.d4c71813.woff2](https://mypokemontype.vercel.app/_next/static/media/2da868b477e86450-s.d4c71813.woff2)
+(mypokemontype.vercel.app)
+ - 1,674 ms, 16.48 KiB
+[…ico/manifest.json](https://mypokemontype.vercel.app/img/ico/manifest.json)
+(mypokemontype.vercel.app)
+ - 764 ms, 0.58 KiB
+[…chunks/393ff4368d6ba060.css](https://mypokemontype.vercel.app/_next/static/chunks/393ff4368d6ba060.css)
+(mypokemontype.vercel.app)
+ - 758 ms, 9.03 KiB
+[…chunks/ac94c41836c14d3f.css](https://mypokemontype.vercel.app/_next/static/chunks/ac94c41836c14d3f.css)
+(mypokemontype.vercel.app)
+ - 735 ms, 0.67 KiB
+```
+
+이 이슈는 폰트를 로딩하는 방식이 문제였다. woff2 포맷 자체가 이미 최선이었다. 하지만 `preload: true`로 설정되어있어서 폰트 파일이 크리티컬 패스에 강제로 진입하고 있었다. 이게 LCP를 직접 막고 있었다.
+`layout.tsx`에서 preload: true가 설정되어있어서 이게 Noto Sans KR 파일 8개 (~128KB)가 크리티컬 패스에 강제로 진입하고 있었다. 이게 LCP를 직접 막고 있었다.
+
+기존의 `layout.tsx` 파일을 수정해서 display 방식을 변경해주었다.
+
+```tsx
+// 기존 src/app/layout.tsx
+
+export const noto = Noto_Sans_KR({
+  weight: ['700', '900'],
+  display: 'swap',
+  preload: true,
+  variable: '--font-noto',
+  subsets: ['latin'],
+})
+```
+
+```tsx
+// 변경된 src/app/layout.tsx
+
+export const noto = Noto_Sans_KR({
+  weight: ['700', '900'],
+  display: 'optional', // 변경
+  preload: false, // 변경
+  variable: '--font-noto',
+  subsets: ['latin'],
+})
+```
+
+display:optional으로 변경해서 렌더 블로킹을 완전 제거하고, `preload: false`로 변경해서 크리티컬 패스에서 제외시켰다.
+
+<Spacer />
+
+## 2. INSIGHT - Render blocking requests
+
+```
+Requests are blocking the page's initial render, which may delay LCP. [Deferring or inlining](https://developer.chrome.com/docs/performance/insights/render-blocking?utm_source=lighthouse&utm_medium=devtools) can move these network requests out of the critical path.FCPLCPUnscored
+
+|URL|Transfer Size|Duration|
+|---|---|---|
+|vercel.app<br><br> 1st party|34.7 KiB|0 ms|
+|[…chunks/393ff4368d6ba060.css](https://mypokemontype.vercel.app/_next/static/chunks/393ff4368d6ba060.css)<br><br>(mypokemontype.vercel.app)|9.0 KiB||
+|[…chunks/3436fc2e6bc8ebc7.css](https://mypokemontype.vercel.app/_next/static/chunks/3436fc2e6bc8ebc7.css)<br><br>(mypokemontype.vercel.app)|25.0 KiB||
+|[…chunks/ac94c41836c14d3f.css](https://mypokemontype.vercel.app/_next/static/chunks/ac94c41836c14d3f.css)<br><br>(mypokemontype.vercel.app)|0.7 KiB||
+```
+
+> Render Blocking CSS?
+
+브라우저는 CSS를 `<head>`에서 발견하면 다운로드 완료 전까지 화면을 아예 그리지 않는다. 이게 render blocking에 해당한다.
+
+> 브라우저 요청 -> HTML 수신 -> CSS 발견 -> CSS 다운로드 기다리는 동안 흰 화면 → CSS 완료 → 렌더링 시작
+
+render blocking이 왜 발생하냐면 Next.js가 빌드할 때 CSS를 자동으로 청크로 분리해서 `<link rel="stylesheet">`로 스타일을 주입하기 때문이다. 이 태그 자체가 브라우저 스펙상 render-blocking에 해당한다. CSS가 먼저 막고, 그 CSS 안에 폰트 참조가 있어서 폰트가 추가로 막는 구조이다.
+
+폰트 blocking은 1. 에서 해결했고, CSS blocking은 next.js가 자동 생성하는거라 직접 제어가 어렵다. 96 -> 100점 상승에 있어서 큰 영향은 없을 것이라는 판단이 들어 그냥 두기로 했다.
+
+<Spacer />
+
+## 3. INSIGHT - Legacy JavaScript - Est savings of 14 KiB
+
+```
+Polyfills and transforms enable older browsers to use new JavaScript features. However, many aren't necessary for modern browsers. Consider modifying your JavaScript build process to not transpile [Baseline](https://web.dev/articles/baseline-and-polyfills?utm_source=lighthouse&utm_medium=devtools) features, unless you know you must support older browsers. [Learn why most sites can deploy ES6+ code without transpiling](https://developer.chrome.com/docs/performance/insights/legacy-javascript?utm_source=lighthouse&utm_medium=devtools)FCPLCPUnscored
+
+|URL||Wasted bytes|
+|---|---|---|
+|vercel.app<br><br> 1st party||13.6 KiB|
+|[…chunks/ea27f2d34b97567f.js](https://mypokemontype.vercel.app/_next/static/chunks/ea27f2d34b97567f.js)<br><br>(mypokemontype.vercel.app)||13.6 KiB|
+|ea27f2d34b97567f.js:1|Array.prototype.at||
+|ea27f2d34b97567f.js:1|Array.prototype.flat||
+|ea27f2d34b97567f.js:1|Array.prototype.flatMap||
+|ea27f2d34b97567f.js:1|Object.fromEntries||
+|ea27f2d34b97567f.js:1|Object.hasOwn||
+|ea27f2d34b97567f.js:1|String.prototype.trimEnd||
+|ea27f2d34b97567f.js:1|String.prototype.trimStart||
+```
+
+browserslist가 오래된 브라우저까지 타겟팅해서 이미 모든 모던 브라우저가 지원하는 `Array.at`, `Object.fromEntries` 등을 폴리필하고 있다.
+
+```json
+// package.json
+
+  "browserslist": [
+    "last 2 Chrome versions",
+    "last 2 Firefox versions",
+    "last 2 Safari versions",
+    "last 2 Edge versions"
+  ]
+```
+
+기존 package.json에 아예 없던 browerslist 내용을 추가해서 모던 브라우저로 타게팅을 했다.
+
+<Spacer />
+
+## 4. INSIGHT - Layout shift culprits
+
+```
+Layout shifts occur when elements move absent any user interaction. Investigate the causes of layout shifts, such as elements being added, removed, or their fonts changing as the page loads.CLSUnscored
+Element
+Layout shift score
+Total
+0.026
+body.light
+0.026
+```
+
+LCP 요소가 `<a>` (Title 컴포넌트) 인데, Title 컴포넌트에서 사용한 Helios 폰트 때문이다.
+`display: 'swap'`은 폴백 폰트로 먼저 렌더링 → Helios 로드 완료 시 교체하는 방식인데, 브라우저는 폰트 교체 시점을 LCP로 측정한다. 즉 Helios가 로드되는 1,550ms 동안 LCP가 완료 안 된 것으로 간주된다.
+Helios 폰트를 `display: 'optional'`로 변경해서 빠르게 로드되면 쓰고, 못 로드하면 폴백 유지를 통해 LCP 지연을 제거할 수 있었다.
+
+<Spacer />
+
+```tsx
+// 기존 src/app/layout.tsx
+const helios = localFont({
+  src: [
+    {
+      path: '../../public/HeliosExtBlack.woff',
+      style: 'normal',
+      weight: '400 700 900',
+    },
+  ],
+
+  display: 'swap',
+  preload: true,
+  variable: '--font-helios',
+  fallback: ['system-ui', 'Arial'],
+})
+```
+
+```tsx
+// src/app/layout.tsx
+const helios = localFont({
+  src: [
+    {
+      path: '../../public/HeliosExtBlack.woff',
+      style: 'normal',
+      weight: '400 700 900',
+    },
+  ],
+
+  display: 'optional', // 변경됨
+  preload: true,
+  variable: '--font-helios',
+  fallback: ['system-ui', 'Arial'],
+})
+```
+
+<Spacer />
+
+## 5. INSIGHT - LCP breakdown
+
+```
+Each [subpart has specific improvement strategies](https://developer.chrome.com/docs/performance/insights/lcp-breakdown?utm_source=lighthouse&utm_medium=devtools). Ideally, most of the LCP time should be spent on loading the resources, not within delays.LCPUnscored
+
+|Subpart|Duration|
+|---|---|
+|Time to first byte|10 ms|
+|Element render delay|1,550 ms|
+
+a
+```
+
+이 이슈는 다크모드 초기화 순서와 관련된 문제였다. 현재 다크모드 초기화 순서는 아래와 같다.
+
+1. 페이지 렌더링 (body에 아무 클래스 없음)
+2. JS 로드 → localStorage 읽기
+3. body에 'light' 클래스 추가 → 레이아웃 시프트
+
+해결하기 위해 `<head>`에 인라인 스크립트를 넣어서 JS가 로드되기 전에 동기적으로 클래스를 적용했다.
+
+localStorage 키는 `mypkmn-theme`, zustand persist 구조는 `{ state: { theme } }`입니다. `<head>`에 인라인 스크립트를 추가했다.
+이제 HTML 파싱 중 `<head>` 인라인 스크립트가 동기적으로 실행되어, React가 hydrate되기 전에 `body`에 `light` 또는 `dark` 클래스가 적용된다. JS 로드 후 클래스가 추가되는 타이밍 차이가 사라져 CLS가 제거되고 LCP가 개선된다.
+
+```tsx
+// 기존 src/app/layout.tsx
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="ko" className={`${noto.variable} ${helios.variable} ${noto.className}`}>
+      <body>
+        <QueryProvider>
+          <TooltipProvider delayDuration={300}>
+            <ServiceWorkerRegister />
+            <main>{children}</main>
+            <Toaster duration={1000} position="top-center" />
+          </TooltipProvider>
+        </QueryProvider>
+      </body>
+    </html>
+  )
+}
+```
+
+```tsx
+// src/app/layout.tsx
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="ko" className={`${noto.variable} ${helios.variable} ${noto.className}`}>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=JSON.parse(localStorage.getItem('mypkmn-theme'))?.state?.theme;if(!t){t=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';}document.body.classList.add(t);}catch(e){}})();`,
+          }}
+        />
+      </head>
+      <body>
+        <QueryProvider>
+          <TooltipProvider delayDuration={300}>
+            <ServiceWorkerRegister />
+            <main>{children}</main>
+            <Toaster duration={1000} position="top-center" />
+          </TooltipProvider>
+        </QueryProvider>
+      </body>
+    </html>
+  )
+}
+```
+
+다크모드 자동 설정 스크립트를 추가했다.
+
+<Spacer />
+
+`Minify JavaScript` 이슈 같은 경우 브라우저 확장 프로그램 때문에 나오는 경우여서 무시하기로 했다.
+
+<Spacer />
+
+## 6. DIAGNOSTICS - Reduce unused CSS Est savings of 43 KiB
+
+```
+Reduce unused rules from stylesheets and defer CSS not used for above-the-fold content to decrease bytes consumed by network activity. [Learn how to reduce unused CSS](https://developer.chrome.com/docs/lighthouse/performance/unused-css-rules/?utm_source=lighthouse&utm_medium=devtools).FCPLCPUnscored
+
+|URL|Transfer Size|Est Savings|
+|---|---|---|
+|vercel.app<br><br> 1st party|24.9 KiB|24.8 KiB|
+|[…chunks/3436fc2e6bc8ebc7.css](https://mypokemontype.vercel.app/_next/static/chunks/3436fc2e6bc8ebc7.css)<br><br>(mypokemontype.vercel.app)|24.9 KiB|24.8 KiB|
+|Unattributable|23.4 KiB|18.1 KiB|
+|/* WXT Shadow Root Reset */ :host{all:initial !important;} …|
+```
+
+`WXT Shadow Root Reset` 23.4KB는 브라우저 확장 프로그램이므로 무시했다.
+`3436fc2e6bc8ebc7.css` 24.8KB 는 웹 앱에서 사용 중인 Tailwind CSS이다. Tailwind JIT가 동적 클래스명(문자열 조합)을 못 잡아서 미사용 CSS가 포함된 것이다. 작은 부분이지만 개선해보기로 했다.
+
+<Spacer />
+
+## 7. DIAGNOSTICS - Page prevented back/forward cache restoration 3 failure reasons
+
+```
+Many navigations are performed by going back to a previous page, or forwards again. The back/forward cache (bfcache) can speed up these return navigations. [Learn more about the bfcache](https://developer.chrome.com/docs/lighthouse/performance/bf-cache/?utm_source=lighthouse&utm_medium=devtools)Unscored
+
+|Failure reason|Failure type|
+|---|---|
+|Pages with cache-control:no-store header cannot enter back/forward cache.|Actionable|
+|[/ko](https://mypokemontype.vercel.app/ko)<br><br>(mypokemontype.vercel.app)||
+|Pages whose main resource has cache-control:no-store cannot enter back/forward cache.|Not actionable|
+|[/ko](https://mypokemontype.vercel.app/ko)<br><br>(mypokemontype.vercel.app)||
+|Back/forward cache is disabled because some JavaScript network request received resource with `Cache-Control: no-store` header.|Not actionable|
+|[/ko](https://mypokemontype.vercel.app/ko)<br><br>(mypokemontype.vercel.app)||
+```
+
+`vercel.json`에 추가되었던 `Cache-Control: no-store`가 원인이다. `no-store`는 bfcache(뒤로가기 캐시)를 완전히 비활성화한다.
+`no-store`을 `no-cache`로 변경하고, `no-cache`는 "재검증 후 사용"이라 stale 청크 문제도 막으면서 bfcache는 허용해서 해결했다.
+
+```json
+// 기존 vercel.json
+{
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
+        }
+      ]
+    },
+```
+
+```json
+// 기존 vercel.json
+{
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, must-revalidate" // 수정
+        }
+      ]
+    },
+```
+
+---
+
+# 라이트하우스 측정 환경을 시크릿 모드로 변경
+
+여기까지 해결한 뒤 배포하고 다시 라이트하우스 점수를 측정했는데 성능 96점에서 점수 자체에 큰 상승이 없었다.
+이 때 시크릿 탭에서 측정을 해보니 99점이 나왔다.
+
+![라이트 하우스 두번째 측정](/static/images/my-pokemon-type/lighthouse2.png)
+
+아마 기존 탭에서는 브라우저 확장 프로그램, 쿠키, 로컬 스토리지 등 여러가지 요소들이 라이트하우스 측정에 영향을 주고 있었던 것으로 추측된다. 라이트하우스 점수를 측정할 때에는 기본 탭과 시크릿 탭 중 어디서 측정하는게 표준인지 찾아보았다. 그리고 시크릿 모드가 표준이라는 내용을 구글 라이트하우스 공식 문서에서 찾을 수 있었다.
+
+https://developer.chrome.com/docs/devtools/lighthouse?utm_source=chatgpt.com&hl=ko
+
+> An important consideration is that Lighthouse is influenced by your setup, including other load happening on your device, Chrome extensions, and any device settings you've stored in cookies, local storage, or similar.
+
+라이트하우스 결과는 확장 프로그램, 쿠키, 로컬 스토리지 영향을 받기 때문에 시크릿 모드에서 실행되는 것이 권장된다.
+
+그래서 시크릿 탭에서만 계속 점수 개선을 해보기로 했다.
+
+<Spacer />
+
+# 📍 PERFORMANCE 2차 개선: 99점 유지
+
+## 1. 네트워크 종속 항목 트리
+
+```
+체인의 길이를 줄이고, 리소스의 다운로드 크기를 줄이거나 불필요한 리소스의 다운로드를 지연하여 페이지 로드 속도를 개선하는 방식으로 [크리티컬 요청 체이닝을 방지](https://developer.chrome.com/docs/lighthouse/performance/critical-request-chains?utm_source=lighthouse&utm_medium=devtools)합니다.LCP점수에 포함되지 않음
+
+최상 경로 최대 지연 시간: **428ms**
+
+초기 탐색
+
+[/en](https://mypokemontype.vercel.app/en)
+(mypokemontype.vercel.app)
+ - 360ms, 4.20 KiB
+[…chunks/a6b4c139b6c8cbda.css](https://mypokemontype.vercel.app/_next/static/chunks/a6b4c139b6c8cbda.css)
+(mypokemontype.vercel.app)
+ - 386ms, 25.03 KiB
+[…media/fca78c2ee6cec166-s.11a55858.woff2](https://mypokemontype.vercel.app/_next/static/media/fca78c2ee6cec166-s.11a55858.woff2)
+(mypokemontype.vercel.app)
+ - 428ms, 25.68 KiB
+[…chunks/26ec66057aceac12.css](https://mypokemontype.vercel.app/_next/static/chunks/26ec66057aceac12.css)
+(mypokemontype.vercel.app)
+ - 386ms, 0.65 KiB
+[…chunks/159…b9a4f.css](https://mypokemontype.vercel.app/_next/static/chunks/15965049828b9a4f.css)
+(mypokemontype.vercel.app)
+ - 380ms, 9.05 KiB
+
+사전 연결된 출처
+[사전 연결](https://developer.chrome.com/docs/lighthouse/performance/uses-rel-preconnect/?utm_source=lighthouse&utm_medium=devtools) 힌트는 브라우저가 페이지 로드 초기에 연결을 설정하도록 지원하여 해당 출처에 대한 첫 번째 요청이 이루어질 때 시간을 절약합니다. 다음은 페이지가 사전 연결된 출처입니다.
+
+후보 사전 연결
+가장 중요한 출처에 [사전 연결](https://developer.chrome.com/docs/lighthouse/performance/uses-rel-preconnect/?utm_source=lighthouse&utm_medium=devtools) 힌트를 추가하되 4개 이하로 사용하세요.
+
+```
+
+폰트 체인은 이전의 1,702ms에서 428ms으로 크게 개선된 상태이다. next.js 구조상 여기서 더 개선하기 어렵다고 판단해서 그대로 두기로 했다.
+
+<Spacer />
+
+## 2. 레거시 JavaScript 예상 절감 용량: 14KiB
+
+```
+폴리필 및 변환을 통해 이전 브라우저에서 새로운 JavaScript 기능을 사용할 수 있습니다. 하지만 최신 브라우저에서는 대부분 필요하지 않습니다. 이전 브라우저를 지원해야 하는 경우가 아니라면 [Baseline](https://web.dev/articles/baseline-and-polyfills?utm_source=lighthouse&utm_medium=devtools) 기능을 트랜스파일하지 않도록 JavaScript 빌드 프로세스를 수정해 보세요. [대부분의 사이트에서 트랜스파일링 없이 ES6+ 코드를 배포할 수 있는 이유 알아보기](https://philipwalton.com/articles/the-state-of-es5-on-the-web/)FCPLCP점수에 포함되지 않음
+
+|URL||낭비된 바이트|
+|---|---|---|
+|vercel.app<br><br> 퍼스트 파티||13.6 KiB|
+|[…chunks/6535dfeb590e81ac.js](https://mypokemontype.vercel.app/_next/static/chunks/6535dfeb590e81ac.js)<br><br>(mypokemontype.vercel.app)||13.6 KiB|
+|6535dfeb590e81ac.js:1|Array.prototype.at||
+|6535dfeb590e81ac.js:1|Array.prototype.flat||
+|6535dfeb590e81ac.js:1|Array.prototype.flatMap||
+|6535dfeb590e81ac.js:1|Object.fromEntries||
+|6535dfeb590e81ac.js:1|Object.hasOwn||
+|6535dfeb590e81ac.js:1|String.prototype.trimEnd||
+|6535dfeb590e81ac.js:1|String.prototype.trimStart|
+```
+
+package.json에 browserslist 설정을 추가했음에도 여전히 기본값(구형 브라우저 포함)이 빌드 되고 있었다. 여전히 폴리필이 나오는건 next.js 자체가 browserslist 설정을 우회하는 것으로 추측되었다. next.js는 내부적으로 SWC 컴파일러를 쓰는데, 이는 browserslist와 별도로 동작하기 때문이다. next.config에서 명시적으로 타겟을 지정하는게 필요했다.
+
+하지만 next.js 16에서 `package.json`의 `browserslist` 설정을 빌드 시 자동으로 읽어야 하는데, 폴리필이 계속 나온다면 해당 14KB는 서드파티 라이브러리(React, Zustand 등)가 자체적으로 포함한 거일 가능성이 높았다. 그 경우 내가 직접 제어하기 어렵고, 99→100점 차이에서 점수에 포함되지 않는(Unscored) 항목이라 실제 점수에는 영향 없다고 느껴 넘기기로 했다.
+
+<Spacer />
+
+## 3. 사용하지 않는 CSS 줄이기 예상 절감 용량: 25KiB
+
+```
+스타일시트에서 사용되지 않는 규칙을 줄이고 스크롤 없이 볼 수 있는 콘텐츠의 경우 사용되지 않는 CSS의 로딩을 지연시켜 네트워크 활동에 소비되는 용량을 줄이세요. [사용되지 않는 CSS를 줄이는 방법 알아보기](https://developer.chrome.com/docs/lighthouse/performance/unused-css-rules/?utm_source=lighthouse&utm_medium=devtools)FCPLCP점수에 포함되지 않음
+
+|URL|전송 크기|예상 절감 용량|
+|---|---|---|
+|vercel.app<br><br> 퍼스트 파티|24.9 KiB|24.9 KiB|
+|[…chunks/a6b4c139b6c8cbda.css](https://mypokemontype.vercel.app/_next/static/chunks/a6b4c139b6c8cbda.css)<br><br>(mypokemontype.vercel.app)|
+```
+
+Unused CSS를 찾아보니 content 경로가 `./**`로 너무 넓어서 기존에 마이그레이션 하기 전의 `legacy/` 폴더의 클래스도 스캔하고 있었다. 이 과정에서 미사용 CSS가 생성되었다.
+
+```ts
+// 기존 tailwind.config.ts
+import type { Config } from 'tailwindcss'
+
+const config: Config = {
+  content: ['./**/*.{js,ts,jsx,tsx}'],
+```
+
+```ts
+// 변경된 tailwind.config.ts
+
+import type { Config } from 'tailwindcss'
+
+const config: Config = {
+  content: ['./src/**/*.{js,ts,jsx,tsx}'], // 경로 변경
+```
+
+<Spacer />
+
+# 📍 PERFORMANCE 3차 개선 : 99점 유지
+
+여전히 성능이 99점으로 나오길래 미련이 생겨서 계속 개선해보기로 했다.
+
+## 1. 레이아웃 변경 원인
+
+```
+레이아웃 변경은 사용자 상호작용 없이 요소가 이동할 때 발생합니다. 페이지가 로드될 때 요소가 추가되거나 삭제되거나 글꼴이 변경되는 등 [레이아웃이 변경되는 이유를 조사](https://web.dev/articles/optimize-cls?utm_source=lighthouse&utm_medium=devtools)하세요.CLS점수에 포함되지 않음
+
+| 요소   | 레이아웃 변경 점수 |
+| ---- | ---------- |
+| 합계   | 0.074      |
+| body | 0.074      |
+```
+
+CLS가 0.026 → 0.074으로 악화된 게 핵심 문제였다. 원인은 우리가 추가한 인라인 스크립트예요. `<head>`에서 실행되면 `document.body`가 아직 null이라 클래스 추가가 실패하고, Zustand `initTheme()`이 나중에 클래스를 추가한다. 그 다음에 이전보다 더 늦게 shift가 발생했다. 스크립트를 `<body>` 첫 번째 자식으로 옮기면 body가 존재하는 시점에 실행된다.
+
+스크립트를 `<head>`에서 `<body>` 첫 번째 자식으로 이동시켰다. 이제 `document.body`가 이미 존재하는 상태에서 실행되므로 다크모드 클래스가 즉시 적용되어 CLS 개선을 기대할 수 있었다.
+
+```tsx
+// 기존 src/app/layout.tsx
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="ko" className={`${noto.variable} ${helios.variable} ${noto.className}`}>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=JSON.parse(localStorage.getItem('mypkmn-theme'))?.state?.theme;if(!t){t=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';}document.body.classList.add(t);}catch(e){}})();`,
+          }}
+        />
+      </head>
+      <body>
+        <QueryProvider>
+          <TooltipProvider delayDuration={300}>
+            <ServiceWorkerRegister />
+            <main>{children}</main>
+            <Toaster duration={1000} position="top-center" />
+          </TooltipProvider>
+        </QueryProvider>
+      </body>
+    </html>
+  )
+}
+```
+
+```tsx
+// 변경된 src/app/layout.tsx
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="ko" className={`${noto.variable} ${helios.variable} ${noto.className}`}>
+      <body>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=JSON.parse(localStorage.getItem('mypkmn-theme'))?.state?.theme;if(!t){t=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';}document.body.classList.add(t);}catch(e){}})();`,
+          }}
+        />
+        <QueryProvider>
+          <TooltipProvider delayDuration={300}>
+            <ServiceWorkerRegister />
+            <main>{children}</main>
+            <Toaster duration={1000} position="top-center" />
+          </TooltipProvider>
+        </QueryProvider>
+      </body>
+    </html>
+  )
+}
+```
+
+<Spacer />
+
+이 상태에서 측정했을 때 여전히 99점이었다. 일단 만족하고 다음으로 넘어가기로 했다.
+
+<Spacer />
+
+# 📍 ACCESSIBILITY 1차 개선: 91점 → 97점
+
+![라이트 하우스 세번째 측정](/static/images/my-pokemon-type/lighthouse3.png)
+
+## 1. aria - `[aria-*]` 속성이 역할과 일치하지 않음
+
+```
+각 ARIA `role`은 `aria-*` 속성으로 구성된 특정 하위 세트를 지원합니다. 이 두 가지가 일치하지 않으면 `aria-*` 속성이 유효하지 않게 됩니다. [ARIA 속성을 역할에 일치시키는 방법 알아보기](https://dequeuniversity.com/rules/axe/4.11/aria-allowed-attr)
+
+|통과하지 못한 요소|
+|---|
+|a.relative.z-10.flex-1.rounded-[7px].py-[9px].text-center.text-[17px].font-bold.transition-colors.duration-300.sm:py-[14px].sm:text-[18px].lg:py-[17px].lg:text-[20px].tracking-[3px].text-white|
+|a.relative.z-10.flex-1.py-[9px].text-center.text-[17px].font-bold.transition-colors.duration-300.sm:py-[14px].sm:text-[18px].lg:py-[17px].lg:text-[20px].tracking-[3px].rounded-[10px].text-[var(--disable)].ring-2.ring-[var(--border)].ring-inset|
+
+애플리케이션의 ARIA 사용을 개선하도록 추천된 사항입니다. 이를 통해 스크린 리더와 같은 지원 기술을 사용하는 사용자의 환경을 개선할 수 있습니다.
+```
+
+<Spacer />
+
+## 2. 대비 - 백그라운드 및 포그라운드 색상의 대비율이 충분하지 않습니다
+
+```
+많은 사용자가 저대비 텍스트를 읽는 데 어려움을 겪거나 전혀 읽지 못합니다. [충분한 색상 대비를 제공하는 방법 알아보기](https://dequeuniversity.com/rules/axe/4.11/color-contrast)
+
+|통과하지 못한 요소|
+|---|
+|span.text-center.text-sm.font-semibold.text-[var(--text)].opacity-30|
+|div.flex.h-full.min-h-[175px].w-full.flex-col.items-center.rounded-[22px].p-3.sm:p-5.text-[var(--text)].shadow-md.transition-colors.duration-200.border-[var(--offenseRec)].bg-[var(--card)].cursor-pointer|
+|span.text-[10px].text-[var(--text)].opacity-40|
+|body.dark|
+|span.text-center.text-[10px].font-bold.uppercase.sm:text-[12px].pb-2.sm:pb-0.break-keep|
+|div.flex.h-full.min-h-[175px].w-full.flex-col.items-center.rounded-[22px].p-3.sm:p-5.text-[var(--text)].shadow-md.transition-colors.duration-200.border-[var(--border)].bg-[var(--card)].cursor-pointer|
+|span.text-center.text-sm.font-semibold.text-[var(--text)].opacity-30|
+|div.flex.h-full.min-h-[175px].w-full.flex-col.items-center.rounded-[22px].p-3.sm:p-5.text-[var(--text)].shadow-md.transition-colors.duration-200.border-[var(--border)].bg-[var(--card)].cursor-pointer|
+|span.font-bold.capitalize.text-[var(--offenseRec)]|
+|body.dark|
+|span.font-bold.capitalize.text-[var(--dark)]|
+|body.dark|
+|span|
+|span.inline-flex.cursor-pointer.select-none.items-center.gap-1.rounded-[6px].border.border-dashed.border-[rgba(212,168,0,.4)].bg-[rgba(212,168,0,.08)].px-2.py-[1px].text-[15px].font-bold.text-[#d4a800].transition-colors.duration-200.hover:bg-[rgba(212,168,0,.15)]|
+|body.dark|
+|a.relative.z-10.flex-1.py-[9px].text-center.text-[17px].font-bold.transition-colors.duration-300.sm:py-[14px].sm:text-[18px].lg:py-[17px].lg:text-[20px].tracking-[3px].rounded-[10px].text-[var(--disable)].ring-2.ring-[var(--border)].ring-inset|
+|div.relative.flex.w-full.rounded-[22px].bg-[var(--card)].py-[4px].select-none|
+
+```
+
+ARIA 문제는 SelectorMode의 `<Link>` 요소가 `aria-selected`를 쓰는데 role이 없어서 생기는 거고, 대비 문제는 여러 컴포넌트에 퍼져있다.
+ARIA 이슈는 SelectorMode `<Link>`가 `aria-selected`를 쓰는데 `role="tab"`이 없었다.
+
+1. `BattleSentence` — 공격/방어자 이름(`--offenseRec`, `--defenseRec`, `--dark`)과 황금 뱃지(`#d4a800`)
+2. `PokemonSlot` — 롤 라벨(`--offenseRec`, `--defenseRec`)과 placeholder `opacity-30`
+3. `SelectorMode` — 비활성 탭 `text-[var(--disable)]` (대비율 1.75:1)
+4. `DirectionArrow` — 레이블 `opacity-40`
+
+기존에 지정해둔 컬러를 배경에 직접 쓰면 대비가 부족해서, 텍스트 전용 고대비 변수를 새로 추가해서 적용했다.
+
+```css
+// global.css
+
+    /* 텍스트 전용 고대비 변수 (--card: #fff 기준 4.5:1 이상) */
+    --offenseText: #c0392b;   /* 5.5:1 on white */
+    --defenseText: #3d6b80;   /* 5.6:1 on white */
+    --darkText: #6b5b54;      /* 6.0:1 on white */
+    --goldenText: #7a5c00;    /* 5.8:1 on white */
+    --disable-text: #6b6b6b;  /* 5.1:1 on white */
+```
+
+```tsx
+// /src/components/UI/SelectorMode/index.tsx
+  return (
+    <div role="tablist" className="relative flex w-full rounded-[22px] bg-[var(--card)] py-[4px] select-none">  // role 추가
+      <span
+        className={cn(
+          'absolute top-[4px] h-[calc(100%-8px)] w-[calc(50%-4px)] rounded-[10px] transition-all duration-[350ms] ease-[cubic-bezier(.34,1.2,.64,1)]',
+          activeTab.activeStyle,
+        )}
+      />
+
+      {tabs.map((tab) => {
+        const isActive = mode === tab.value
+        return (
+          <Link
+            key={tab.value}
+            href={tab.href}
+            role="tab" // role 추가
+            aria-label={tab.ariaLabel}
+            aria-selected={isActive}
+            onClick={() => handleSelect(tab.value)}
+            className={cn(
+              modeStyle,
+              getLangClass(lang),
+              isActive
+                ? 'text-white'
+                : 'rounded-[10px] text-[var(--disable-text)] ring-2 ring-[var(--border)] ring-inset', //
+            )}
+          >
+            {tab.label}
+          </Link>
+        )
+      })}
+    </div>
+  )
+}
+```
+
+SelectorMode에서는 role tablist/tab ARIA 추가하고 비활성 탭 텍스트 대비 개선 위해 `text-[var(--disable-text)]` 적용했다.
+
+그외에 기본적으로 `text-[var(--text)`만 적용했던 span 요소에 `text-[var(--disable-text)]"` 를 추가했다.
+
+<Spacer />
+
+![라이트 하우스 네번째 측정](/static/images/my-pokemon-type/lighthouse4.png)
+
+그 전에는 다크 모드로 측정했을 때이고 지금은 라이트모드로 측정했다. 동일한 제목의 문제가 발생했다.
+
+<Spacer />
+
+# 📍 ACCESSIBILITY 2차 개선: 97점 → 100점
+
+## 1. 대비 - 백그라운드 및 포그라운드 색상의 대비율이 충분하지 않습니다
+
+```
+많은 사용자가 저대비 텍스트를 읽는 데 어려움을 겪거나 전혀 읽지 못합니다. 충분한 색상 대비를 제공하는 방법 알아보기 통과하지 못한 요소 span.text-[10px].text-[var(--disable-text)] body.light span span.inline-flex.cursor-pointer.select-none.items-center.gap-1.rounded-[6px].border.border-dashed.border-[rgba(212,168,0,.4)].bg-[rgba(212,168,0,.08)].px-2.py-[1px].text-[15px].font-bold.text-[var(--goldenText)].transition-colors.duration-200.hover:bg-[rgba(212,168,0,.15)] body.light 콘텐츠의 가독성을 개선할 추천 내용입니다.
+```
+
+1. **`--disable-text` `#6b6b6b`**: `#ffffff` 위에선 5.7:1 통과지만, 실제 렌더링 배경인 `#dddbdb` 위에선 **3.6:1** → 실패
+2. **`--goldenText` `#7a5c00`**: `bg-[rgba(212,168,0,.08)]` + `#dddbdb` 합성 배경 위에서 **4.2:1** → 실패
+3. **`▼` 화살표 `opacity-60`**: 부모 goldenText 색상에 opacity 0.6 적용 → 실제 대비 **2.5:1** → 실패
+
+```css
+// global.css
+
+    /* 텍스트 전용 고대비 변수 (--background: #dddbdb 기준 4.5:1 이상) */
+    --offenseText: #c0392b;   /* 5.2:1 on #dddbdb */
+    --defenseText: #2e5f73;   /* 5.5:1 on #dddbdb */
+    --darkText: #5a4a44;      /* 5.6:1 on #dddbdb */
+    --goldenText: #5c4400;    /* 6.4:1 on #dddbdb */
+    --disable-text: #595959;  /* 4.6:1 on #dddbdb */
+```
+
+global.css에서 텍스트 전용 고대비 변수를 추가했다. 라이트모드일 때 배경 컬러가 `#dddbdb`(회색) 이다보니 라이트모드를 고려한 대비율로 변경하는 것이 필요했다.
+
+<Spacer />
+
+## 2. PillGroup 컴포넌트에 키보드 접근성 추가
+
+대부분의 컴포넌트들은 키보드의 tab 키와 Enter 키, 방향키로 접근할 수 있었으나 셀렉터의 포켓몬 타입을 보여주는 Pill 컴포넌트에는 키보드로 접근이 불가능했다.
+
+이유는 다음과 같았다.
+
+- **PillGroup의 Pill**: `onClick`이 있어서 토글 가능하지만, `<div>`라 `tabIndex`가 없어 키보드 접근 불가
+- **Result의 Pill**: `onClick` 없음 → 인터랙션 없으니 탭 포커스 불필요, 이미 `aria-label`은 있음
+
+```tsx
+// mypokemontype/src/components/UI/Pill/index.tsx
+export const Pill = ({
+  pokemonTypeName,
+  onClick,
+  upToTwo,
+  isDarkMode,
+  isActive,
+  animation = true,
+  size = 'md',
+}: Props) => {
+  const handleActivate = () => { // 기존의 handleClick 삭제 후 추가.
+    onClick && onClick(!isActive)
+    pokemonTypeName && upToTwo && upToTwo(pokemonTypeName)
+  }
+
+  const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    handleActivate()
+    const target = e.currentTarget
+    target.blur()
+    if ('ontouchstart' in window) {
+      setTimeout(() => target.blur(), 0)
+    }
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      handleActivate()
+    }
+  }
+  const { t } = useTranslation()
+  const { lang } = useLanguageStore()
+
+  return (
+    <div
+      className={cn(
+        'pillShadow',
+        isDarkMode ? 'shadowPill' : 'shadowBtn',
+        onClick ? 'cursor-pointer' : 'cursor-default',
+      )}
+    >
+      <div
+        lang={lang}
+        role={onClick ? 'checkbox' : undefined} // role 추가
+        tabIndex={onClick ? 0 : undefined} // tabIndex={0}을 통해 탭 키로 포커스 이동 가능
+        aria-checked={onClick ? isActive : undefined}
+        aria-label={t(`TypeName.${pokemonTypeName}`)}
+        onClick={handleClick}
+        onKeyDown={onClick ? handleKeyDown : undefined} // Enter, Space로 토글
+        className={cn(
+```
+
+- `role="checkbox"` + `aria-checked` — 스크린 리더가 선택 상태를 읽을 수 있음
+- `tabIndex={0}` — 탭 키로 포커스 이동 가능
+- `onKeyDown` — Enter / Space로 토글
+- Result의 Pill(`onClick` 없음)은 위 속성 모두 붙지 않아 인터랙션 없는 요소가 탭 순서에 포함되지 않음
+
+PillGroup의 18개 Pill을 탭으로 하나씩 이동하고 Enter/Space로 선택할 수 있습니다.
+
+![라이트 하우스 다섯번째 측정](/static/images/my-pokemon-type/lighthouse5.png)
+
+접근성 100점 달성 성공!
+
+<Spacer />
+
+# 📍 PERFORMACE 4차 개선: 99점 → 100점
+
+권장사항에 있는 4개 항목들을 확인해보기로 했다.
+
+<Spacer />
+
+1. CSP (Content-Security-Policy): 어떤 스크립트/리소스를 로드할 수 있는지 화이트리스트 제어하고, XSS를 방어한다.
+
+- `dangerouslySetInnerHTML`을 [layout.tsx:153](vscode-webview://1pdaotnejaohritthgs94qb3ragloegi5i24tq7kkjfa3fnv5a64/src/app/layout.tsx#L153)에서 다크모드 스크립트에 사용 중 → `unsafe-inline` 허용 필요하거나 nonce 방식으로 전환해야 한다.
+- Next.js 16의 nonce 기반 CSP는 설정이 복잡하다.
+
+---
+
+2. COOP (Cross-Origin-Opener-Policy): 다른 출처 팝업이 현재 창의 JS 객체에 접근 못하게 격리하는 역할을 한다. `vercel.json`에 헤더를 한 줄 추가하는게 필요하다. 부작용이 거의없다.
+
+```json
+{ "key": "Cross-Origin-Opener-Policy", "value": "same-origin" }
+```
+
+---
+
+3. Clickjacking 방어 (X-Frame-Options): 다른 사이트가 iframe으로 이 페이지를 삽입하는 것 방지하는 역할을 한다. 이또한 헤더를 한 줄 추가하면 되며, 부작용이 거의 없다.
+
+```json
+{ "key": "X-Frame-Options", "value": "SAMEORIGIN" }
+```
+
+---
+
+4. Trusted Types: DOM XSS 싱크(`innerHTML` 등)에 신뢰된 값만 허용하는 역할을 한다.
+
+- CSP와 마찬가지로 `dangerouslySetInnerHTML` 때문에 복잡
+- React + Next.js에서 정책 설정이 까다로움
+
+---
+
+<Spacer />
+
+우선 COOP와 X-Frame-Options 두 개를 추가하기로 했다.
+
+```json
+// vercel.json
+
+{
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control", // 추가
+          "value": "no-cache, must-revalidate"  // 추가
+        },
+        {
+          "key": "Cross-Origin-Opener-Policy",  // 추가
+          "value": "same-origin"  // 추가
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "SAMEORIGIN"
+        }
+```
+
+vercel.json의 `/(.*)`에 두 헤더를 추가했다. 배포 후 라이트하우스 권장사항 항목에서 COOP, Clickjacking 경고가 사라졌지만 유의미한 점수 변화를 보여주지 않았다.
+
+<Spacer />
+
+# 📍 검색엔진 최적화: 91점 → 100점
+
+갑작스레 100점에서 91점으로 떨어져서 개선했다.
+
+<Spacer />
+
+## 1. 콘텐츠 권장사항 - 문서에 유효한 `rel=canonical` 없음
+
+```
+콘텐츠 페이지가 아닌 도메인의 루트 URL(홈페이지)을 가리킴
+
+표준 링크는 검색결과에 어떤 URL을 표시할지 알려줍니다. [표준 링크에 관해 자세히 알아보기](https://developer.chrome.com/docs/lighthouse/seo/canonical/?utm_source=lighthouse&utm_medium=devtools)
+
+크롤러가 앱 콘텐츠를 효과적으로 파악할 수 있도록 HTML 형식을 지정하세요.
+```
+
+루트 `layout.tsx`의 canonical이 `https://mypokemontype.vercel.app`으로 모든 페이지에 동일하게 적용되고 있었다. 각 페이지가 자신의 URL을 canonical로 가져야 한다.
+
+루트 `layout.tsx`의 canonical을 제거하고, `[lang]/page.tsx`, `[lang]/defense/page.tsx` 각 페이지에 canonical을 추가했다. 그리고 `[lang]/more/page.tsx`는 `'use client'`라 metadata를 사용할 수 없어서 별도 `layout.tsx`을 생성했다.
+
+```tsx
+// mypokemontype/src/app/layout.tsx
+
+  alternates: {
+    canonical: 'https://mypokemontype.vercel.app',
+  },
+```
+
+위 내용을 삭제 했다.
+
+```tsx
+// src/app/[lang]/page.tsx
+
+import { Suspense } from 'react'
+import type { Metadata } from 'next'
+import Selector from '@/components/UI/Selector'
+import Result from '@/components/UI/Result'
+import PokemonSearch from '@/components/UI/PokemonSearch'
+import PokemonBattle from '@/components/UI/PokemonBattle'
+import { UrlSync } from '@/components/UI/UrlSync'
+import { buildPokemonMetadata } from '@/utils/ogMetadata'
+
+export async function generateMetadata({
+  params, // 추가
+  searchParams,
+}: {
+  params: Promise<{ lang: string }> // 추가
+  searchParams: Promise<{ slotA?: string; slotB?: string }>
+}): Promise<Metadata> {
+  const { lang } = await params // 추가
+  const canonical = `https://mypokemontype.vercel.app/${lang}` // 추가
+  return {
+    // 추가
+    alternates: { canonical }, // 추가
+    ...(await buildPokemonMetadata(await searchParams)), // 추가
+  } // 추가
+}
+
+export default function Offense() {
+  return (
+    <main>
+      <Suspense fallback={null}>
+        <UrlSync />
+      </Suspense>
+      <PokemonSearch />
+      <PokemonBattle />
+      <div className="m-4 grid grid-cols-1 items-start gap-12 p-4 xl:grid-cols-2">
+        <Selector />
+        <Result />
+      </div>
+    </main>
+  )
+}
+```
+
+`src/app/[lang]/page.tsx` 외에 `src/app/[lang]/defense/page.tsx`, `src/app/[lang]/more/layout.tsx` 에도 params를 추가했다.
+
+| 파일                    | 변경 내용                                                                          |
+| ----------------------- | ---------------------------------------------------------------------------------- |
+| app/layout.tsx          | 루트 canonical 제거 (모든 페이지에 동일 적용되던 문제 해소)                        |
+| [lang]/page.tsx         | `params`에서 `lang` 추출 → `/en`, `/ko`, `/ja` canonical 설정                      |
+| [lang]/defense/page.tsx | `/en/defense` 등 canonical 설정                                                    |
+| [lang]/more/layout.tsx  | 신규 생성 — `more` 페이지 canonical 설정 (`'use client'` 페이지라 layout으로 분리) |
+
+배포 후 Lighthouse가 `/en` 페이지를 측정하면 canonical이 `https://mypokemontype.vercel.app/en`으로 잡혀야 합니다.
+
+![라이트 하우스 다섯번째 측정](/static/images/my-pokemon-type/lighthouse6.png)
+
+성능 99점만 100점으로 올리면 컨페티를 볼 수 있다!!!!!!!!!!!
+
+# 📍 PERFORMANCE 5차 개선: 99점 → 100점
+
+## 1. 레거시 JS 14KiB 제거 (실패)
+
+폴리필이 Next.js 자체 번들(`next` 패키지)에 포함되어 있다. `i?.()` 패턴으로 `if (!X.prototype.at)` 형태로 조건부 주입되는데, 이건 Next.js 프레임워크가 번들에 직접 포함하는 것이라 `browserslist`나 SWC 설정으로 제거할 수 없다. `TURBOPACK` 번들은 `.env.local`의 `NEXT_FORCE_WEBPACK=true`가 로컬에서만 webpack을 강제하고, Vercel 배포 시에는 Turbopack이 동작해서 Turbopack 자체의 polyfill이 포함된다.
+
+Turbopack의 polyfill은 현재 외부에서 제거할 방법이 없다. 이건 Next.js/Turbopack의 내부 동작이라 `browserslist`나 `experimental` 설정으로 우회할 수 없다.
+
+## 2. CLS 0.074 (body.light)
+
+`body.light`에서 레이아웃 변경이 발생하는데, 두 가지 원인이 추정된다.
+
+1. 원인 A: layout-client.tsx의 `ready` 상태가 `false`일 때 스켈레톤을 보여주다가 실제 콘텐츠로 교체될 때 레이아웃이 흔들림
+2. 원인 B: 폰트 로딩 (`display: 'optional'`은 swap period가 없어 스왑은 발생하지 않지만, block period ~100ms 내에 로드되지 못하면 폴백 폰트로 고정되어 레이아웃에 영향을 줄 수 있음)
+
+스켈레톤이 실제 콘텐츠와 높이가 다르면 CLS를 유발한다. 스켈레톤 크기를 실제 레이아웃에 맞게 조정하거나, `ready` 조건 자체를 제거하는 방향으로 개선 가능했다.
+
+CLS 원인을 정확히 파악한 결과, `layout-client.tsx`가 `useEffect`에서 i18n을 초기화하고 `ready=true`가 될 때까지 스켈레톤을 보여주는데, 스켈레톤 → 실제 콘텐츠로 교체될 때 레이아웃이 흔들린다. 그런데 `/src/lib/i18n.ts`를 보면 번역 파일이 이미 JS 번들에 포함되어 있어서 `initI18n`은 사실 동기 함수이다. `useEffect`를 기다릴 필요가 없다.
+
+그래서 `ready` 상태 + 스켈레톤 완전 제거하고, `initI18n(lang)`을 렌더 중 동기 호출했다. 번역 파일이 번들에 이미 포함되어 있으므로 가능하다. `setLanguage`, `saveLang`, `initTheme`은 side effect라 `useEffect`에 유지했다.
+
+CLS는 스켈레톤 → 실제 콘텐츠 교체가 없어지므로 0.074에서 더 줄어들고, LCP는 렌더링 지연 650ms 제거되는 것을 기대할 수 있었다. (스켈레톤 대기 없이 바로 실제 콘텐츠 렌더)
+
+## 3. CLS hydration 문제 근본 해결로 돌아가기
+
+- 서버: persist 스토어 초기값 = 빈 상태
+- 클라이언트 첫 렌더: localStorage에서 복원된 값
+- → React hydration 불일치 → 스켈레톤으로 가려야만 해결됨
+
+Zustand의 `skipHydration` 옵션으로 서버/클라이언트 초기 렌더를 동일하게 맞추고, mount 이후에 수동으로 hydrate하면 스켈레톤 없이 해결했다.
+
+```tsx
+// useUpToTwoStore.tsx
+
+    {
+      name: 'mypkmn-selected-types',
+      partialize: (s) => ({ selectedTypes: s.selectedTypes }),
+      skipHydration: true, // 추가
+    },
+```
+
+모든 store에 `skipHydration: true,` 를 추가했다.
+
+```tsx
+// src\app\[lang]\layout-client.tsx
+
+export function LangLayoutClient({
+  children,
+  params,
+}: {
+  children: React.ReactNode
+  params: Promise<{ lang: string }>
+}) {
+  const { lang } = use(params)
+
+  if (!supportedLangs.includes(lang as Language)) notFound() // 추가
+
+  const validLang = lang as Language // 추가
+
+  // 번역 파일이 번들에 포함되어 있으므로 동기 초기화 가능
+  initI18n(validLang) // 추가
+
+  const setLanguage = useLanguageStore((state) => state.setLanguage)
+  const initTheme = useDarkModeStore((state) => state.initTheme)
+
+  useEffect(() => {
+    // 이하 추가 persist 스토어 수동 hydrate (skipHydration: true 설정 대응)
+    // 서버/클라이언트 초기 렌더를 동일하게 유지해서 hydration 불일치(React #418) 방지
+    useUpToTwoStore.persist.rehydrate()
+    usePokemonSlotStore.persist.rehydrate()
+    useOffenseCalStore.persist.rehydrate()
+    useDefenseCalStore.persist.rehydrate()
+    useDarkModeStore.persist.rehydrate()
+
+    setLanguage(validLang)
+    saveLang(validLang)
+    initTheme()
+  }, [validLang])
+
+  return (
+    <div lang={validLang}>
+      <Favicon />
+      <Title />
+      <main>{children}</main>
+      <AllBtns />
+    </div>
+  )
+}
+```
+
+persist 스토어 5개에 `skipHydration: true` 추가했다. 서버 렌더 시 localStorage 읽기 시도 안 함 → 서버/클라이언트 초기값 동일(빈 상태)
+
+`layout-client.tsx`에 스켈레톤을 완전 제거하고, `initI18n` 동기 호출했다. (번들에 포함된 번역 파일) 그리고 `useEffect`에서 모든 persist 스토어 `.persist.rehydrate()` 수동 호출하고 mount 이후 localStorage 복원했다.
+
+<Spacer />
+
+마
+참
+내
+100점..
+
+![라이트 하우스 마지막 측정](/static/images/my-pokemon-type/lighthouse7.png)
+
+컨페티 날리는게 너무 감동적임..
+앞으로 꾸준히 모든 항목 100점을 유지하며 사용자에게 쾌적한 경험을 제공해보고 싶다.

@@ -1,13 +1,13 @@
 ---
-title: 'Javascript 코드의 동작 구조 (런타임 환경)'
+title: 'JavaScript 코드의 동작 구조 (런타임 환경)'
 date: '2024-09-21'
-tags: ['Javascript', 'TIL']
+tags: ['JavaScript', 'TIL']
 draft: false
 summary: '동기/비동기, JS 엔진, 웹 API, 마이크로태스크 큐, 태스크 큐, 이벤트 루프'
 toc: true
 ---
 
-최초 작성: 2024. 9. 21. [notion blog](https://www.notion.so/yheedev/Javascript-107c7639cb4980cb8c64d45ad23f2605)
+최초 작성: 2024. 9. 21. [notion blog](https://www.notion.so/yheedev/JavaScript-107c7639cb4980cb8c64d45ad23f2605)
 
 [이벤트 루프와 태스크 큐, var/const의 한계, 스코프, 함수형 프로그래밍](https://www.notion.so/var-const-87ddf0d1d4d04c7f9004e1352ff73d7e?pvs=21)
 
@@ -29,9 +29,9 @@ toc: true
 
 # 2. 자바스크립트는 단일 스레드 기반의 언어
 
-- Javascript는 싱글 스레드 기반의 언어로, Javascript 엔진은 한 번에 하나의 요청을 처리하는 **동기 방식**으로 작동한다.
-- 하지만 Javascript로 동작하는 브라우저를 보는 유저 입장에서는 다양한 요청이 동시에 일어나는 것처럼 (애니메이션 효과, 데이터 요청 등이 동시에 일어나듯이) 보인다.
-- **싱글 스레드임에도 여러 가지 일이 동시에 실행되는 것처럼 보이는 Javascript의 동시성은 이벤트 루프를 통해 구현된 것이다.**
+- JavaScript는 싱글 스레드 기반의 언어로, JavaScript 엔진은 한 번에 하나의 요청을 처리하는 **동기 방식**으로 작동한다.
+- 하지만 JavaScript로 동작하는 브라우저를 보는 유저 입장에서는 다양한 요청이 동시에 일어나는 것처럼 (애니메이션 효과, 데이터 요청 등이 동시에 일어나듯이) 보인다.
+- **싱글 스레드임에도 여러 가지 일이 동시에 실행되는 것처럼 보이는 JavaScript의 동시성은 이벤트 루프를 통해 구현된 것이다.**
 
 <hr className="invisible mt-1" />
 

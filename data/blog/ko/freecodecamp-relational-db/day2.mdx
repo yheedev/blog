@@ -1,0 +1,385 @@
+---
+title: 'freeCodeCamp Relational Database 2일차 - PostgreSQL 설치 및 기본 사용 방법, SQL의 기본 데이터 형식'
+date: '2026. 6. 16.'
+tags: ['PostgreSQL', 'SQL', 'Relational Database', 'Database']
+projects: ['freecodecamp-relational-db']
+draft: false
+summary: '대표적인 관계형 DB의 특징, SQL이란 무엇인가, DB를 만드는 방법, SQL의 기본 데이터 형식'
+toc: true
+---
+
+# 관계형 DB의 대표적인 종류, PostgreSQL 설치 및 사용 방법
+
+관계형 DB는 웹 개발, 재고 관리 시스템, 의료 시스템, 전자상거래 앱 등 다양한 분야에서 사용된다.
+대표적인 관계형 DB는 MySQL, PostgreSQL, SQLite이 있다.
+
+## 1. MySQL
+
+- 오픈소스 관계형 DB 관리 시스템 (RDBMS)
+- 사용하기 쉽고 안정적이고 실제 서비스 개발에 적합해서 웹 개발 분야에서 자주 사용됨
+- 활발한 개발자 커뮤니티 존재
+
+## 2. PostgreSQL
+
+- 공식적으로 세계에서 가장 진보된 오픈소스 관계형 DB라고 소개됨
+- 무료 오픈소스 객체-관계형 DB 시스템: 높은 신뢰성, 데이터 무결성, 확장성
+- 예를 들어, 사용자 정의 데이터 타입을 만들거나 커스텀 함수를 작성하거나 DB를 다시 컴파일하지 않고 다양한 프로그래밍 언어로 코드를 작성할 수 있음.
+
+## 3. SQLite
+
+- 무료 오픈소스 경량 SQL DB 엔진
+- 가장 널리 사용되는 DB 엔진 중 하나로, 파일 기반 DB
+- Serverless 구조에 별도의 초기 설정 과정이 거의 필요 없는 Zero-Configuration DB라서 빠르게 시작할 수 있음
+
+위에서 소개한 3개의 DB는 모두 무료 오픈소스이다. 이외에도 Microsoft SQL Server와 Oracle Database 같은 상용 DB가 널리 사용된다.
+Microsoft SQL Server는 Microsoft에서 개발한 관계형 DB 관리 시스템으로, 다양한 기업용 앱에서 사용된다.
+Oracle Database은 높은 확장성을 가진 관계형 DB 관리 시스템으로, 고성능이 요구되는 대규모 기업용 환경에서 자주 사용된다.
+
+<Spacer />
+
+# PostgreSQL 설치
+
+https://www.enterprisedb.com/downloads/postgres-postgresql-downloads 에 접속해서 사용 중인 운영체제에 맞는 것을 선택해서 설치한다.
+
+<img
+  src="/static/images/freecodecamp-relational-db/day2.png"
+  alt="PostgreSQL 다운로드 에러"
+  style={{ width: '300px' }}
+/>
+
+새로운 영어 윈도우 계정을 만들어보기도 하고, 숱한 삽질 끝에 이 블로그 포스트를 참고해서 설치할 수 있었다: https://da77777.tistory.com/169
+
+바이너리 파일을 다운로드 받고, 압축을 해제한 뒤 해당 파일을 C드라이브 바로 아래로 옮겼다.
+그리고 C드라이브에서 파워쉘을 열고 아래 명령어들을 실행한다
+
+```
+mkdir C:\postgres-data
+cd C:\postgresql-17.10-2-windows-x64-binaries\pgsql\bin
+.\initdb.exe -D C:\postgres-data -U postgres -W
+```
+
+그러면 아래 내용이 나온다.
+
+```
+이 데이터베이스 시스템에서 만들어지는 파일들은 그 소유주가 "윤희은" id로
+지정될 것입니다. 또한 이 사용자는 서버 프로세스의 소유주가 됩니다.
+
+데이터베이스 클러스터는 "Korean_Korea.949" 로케일으로 초기화될 것입니다.
+"UHC" 인코딩을 서버측 인코딩으로 사용할 수 없습니다.
+기본 데이터베이스는 "UTF8" 인코딩으로 지정됩니다.
+initdb: "Korean_Korea.949" 로케일에 알맞은 전문검색 설정을 찾을 수 없음
+기본 텍스트 검색 구성이 "simple"(으)로 설정됩니다.
+
+자료 페이지 체크섬 기능 사용 하지 않음
+
+새 superuser 암호를 입력하십시오:
+
+암호 확인:
+
+
+이미 있는 C:/postgres-data 디렉터리의 액세스 권한을 고치는 중 ...완료
+하위 디렉터리 만드는 중 ...완료
+사용할 동적 공유 메모리 관리방식을 선택하는 중 ... windows
+"max_connections" 초기값을 선택 중 ...100
+"shared_buffers" 초기값을 선택 중... 128MB
+기본 지역 시간대를 선택 중 ... Asia/Seoul
+환경설정 파일을 만드는 중 ...완료
+부트스트랩 스크립트 실행 중 ... 완료
+부트스트랩 다음 초기화 작업 중 ... 완료
+자료를 디스크에 동기화 하는 중 ... 완료
+
+initdb: 경고: 로컬 접속용 "trust" 인증을 설정 함
+initdb: 힌트: 이 값을 바꾸려면, pg_hba.conf 파일을 수정하든지, 다음번 initdb 명령을 사용할 때, -A 옵션 또는 --auth-local, --auth-host 옵션을 사용해서 initdb 작업을 하세요.
+
+작업완료. 이제 다음 명령을 이용해서 서버를 가동 할 수 있습니다:
+
+    ^"C^:^\postgresql^-17^.10^-2^-windows^-x64^-binaries^\pgsql^\bin^\pg^_ctl^" -D ^"C^:^\postgres^-data^" -l 로그파일 start
+
+PS C:\postgresql-17.10-2-windows-x64-binaries\pgsql\bin>
+```
+
+superuser 암호를 타이핑할 때 아무 것도 나오지 않을텐데 당연한 것임. 그냥 입력하면 된다.
+
+```
+.\pg_ctl.exe -D C:\postgres-data -l C:\postgres-data\postgres.log start
+
+서버를 시작하기 위해 기다리는 중.... 완료
+서버 시작됨
+```
+
+이 명령어를 입력하면 서버가 실행된다.
+
+```
+PS C:\postgresql-17.10-2-windows-x64-binaries\pgsql\bin> .\psql.exe -U postgres
+psql (17.10)
+도움말을 보려면 "help"를 입력하십시오.
+
+postgres=#
+```
+
+`postgres=#` 가 나오면 PostgreSQL 서버가 정상적으로 실행된 것이다.
+
+다만 이 상태는 PostgreSQL 엔진만 설치한 것으로, EDB 설치 프로그램을 사용하지 않은 것이다.
+즉, PostgresQL 서버와 psql은 설치되었으나, pgAdmin을 설치하지 않은 상태이다.
+postgresql-17.10-2-windows-x64-binaries.zip 폴더에는 PostgreSQL 서버만 들어있기 때문이다.
+
+개인적으로 pgAdmin 다운로드에 우여곡절이 많아서 그냥 psql만 사용해서 학습을 진행하기로 했다.
+psql은 SQL 쿼리를 실행할 수 있는 대화형 터미널으로, 시스템에서 psql을 검색해서 실행할 수 있다.
+그럼 SQL 쉘이 열리고, 여기서 SQL 명령어를 직접 입력해서 실행할 수 있다.
+
+<Spacer />
+
+# SQL은 무엇이며, 테이블을 사용해서 DB를 어떻게 만들 수 있을까?
+
+- SQL(Structured Query Language)은 1970년대 개발되었으며, 초기에는 Structured English Query Language(SEQUEL)로 알려졌습니다. 이 용어는 나중에 SQL로 줄여 불리게 되었다.
+- SQL은 관계형 DB에서 데이터를 저장하고 관리하는 데에 사용되는 프로그래밍 언어이다.
+  - 관계형 DB는 데이터를 테이블 형태로 구성한다. 각 테이블은 행과 열로 이뤄져있고, 데이터 속성과 그 관계가 여기에 표현된다. 각 행은 레코드를 나타내고, 각 열은 해당 레코드의 특정 속성 또는 필드를 나타낸다.
+- SQL을 통해 관계형 DB에서 데이터 추가, 변경, 삭제, 검색, 조회를 할 수 있다. SQL은 데이터 쿼리, 필터링, 정렬 및 집계를 위한 포괄적인 명령어 세트를 제공한다.
+- SQL은 필요한 데이터만 쿼리해서 DB 성능을 최적화하는 데에 도움이 되고, 다양한 프로그래밍 언어와 쉽게 통합할 수 있다. 또한 업계 표준으로 채택되었다.
+- 데이터 무결성을 강화하고, 사용자 인증 및 데이터 암호화 지원과 같은 다양한 보안 기능도 포함한다. 확장성과 휴대성이 좋아서 다양한 DB 관리 시스템과 호환된다.
+
+- 주로 명령어를 기반으로 하며, 이런 명령어를 일반적으로 **SQL문** 또는 **SQL 쿼리** 라고 부른다.
+  - 특정 SQL 언어 요소 또는 키워드를 사용해서 SQL 문을 작성해서 DB에서 필요한 작업을 수행할 수 있다.
+
+`postgres=#`가 나온 터미널에서 그대로 실습을 진행하려고 한다. 그렇지 않으면 `psql -U <username> -d <database_name>`를 입력해서 PostgreSQL에 접속하면 됨.
+
+```
+postgres=# CREATE DATABASE my_database;
+CREATE DATABASE
+```
+
+`CREATE` 명령어 뒤에 생성할 DB 이름을 입력한다. CREATE DATABASE가 그대로 출력된다. 모든 SQL 키워드는 대문자로 이뤄져있고, 끝에는 세미콜론으로 끝난다.
+
+psql 쉘에서는 `\c` 명령어와 DB 이름을 입력해서 DB를 전환할 수 있다.
+
+```
+postgres=# \c my_database
+접속정보: 데이터베이스="my_database", 사용자="postgres".
+my_database=#
+```
+
+`\c` 명령어는 psql 쉘의 일부이며 SQL 언어 자체의 일부가 아니라 세미콜론이 필요하지 않다.
+이제 postgres에서 my_database와 연결되어서 프롬프트가 변경된 것을 확인할 수 있다.
+
+```
+my_database=# CREATE TABLE products ( id SERIAL, name VARCHAR(255) );
+CREATE TABLE
+my_database=#
+```
+
+`CREATE TABLE` 명령어를 사용해서 products 라는 테이블을 생성했다. 그 다음에 소괄호를 사용해서 해당 테이블에 필요한 열 이름을 쓰고, 각 열에 저장될 값의 데이터 형식을 지정했다. 예시에서 표는 제품 ID 열과 제품 이름 열, 이렇게 두 개의 열로 구성된다. 테이블 및 열 이름에 대한 표준 명명 규칙은 소문자로 단어를 쓰고 밑줄로 구분하는 스네이크케이스를 사용한다. (ex: delivery_orders)
+
+<Spacer />
+
+# SQL의 기본 데이터 형식
+
+SQL에서 테이블을 생성하는 기본 구문은 다음과 같다. 각 열에 고유한 데이터 형식이 있다.
+
+```sql
+CREATE TABLE table_name(
+  column1 data_type column_constraint,
+  column2 data_type column_constraint,
+  column3 data_type column_constraint,
+  ... etc
+);
+```
+
+데이터 유형을 최대한 정확히 선택하는 것이 필요하다. SQL에는 여섯 가지 인기 있는 데이터 유형 범주가 있다.
+
+- 숫자형(Numeric): INTEGER, FLOAT, SERIAL, DECIMAL 등
+- 날짜 및 시간형(Date and Time): TIMESTAMP, DATE, TIME 등
+- 문자열형(Character and String): CHAR, VARCHAR, TEXT 등
+- 유니코드형(Unicode): NTEXT, NVARCHAR 등
+- 바이너리형(Binary): 이미지, 오디오, 비디오 같은 비텍스트 데이터를 저장
+- 기타(Miscellaneous): XML, TABLE 등
+
+---
+
+## 1. 숫자형 데이터 타입
+
+가장 먼저 INTEGER 타입이다.
+
+```
+units_sold INTEGER
+```
+
+위 예제는 `units_sold` 컬럼에 INTEGER 타입을 지정한 것이다. INTEGER는 데이터베이스에서 4바이트를 사용하며 다음 범위의 정수를 저장할 수 있다.
+
+```
+-2,147,483,648 ~ 2,147,483,647
+```
+
+PostgreSQL 공식 문서에서는 INTEGER를 "일반적인 정수 저장용 타입"이라고 설명한다.
+
+INTEGER와 비슷한 타입으로는 SMALLINT, BIGINT가 있다. 기본 개념은 INTEGER와 같지만 저장 가능한 숫자 범위가 다르다.
+
+- SMALLINT: 더 작은 범위의 정수
+- BIGINT: 더 큰 범위의 정수
+
+---
+
+# 2. SERIAL
+
+PostgreSQL에는 매우 편리한 기능인 SERIAL이 있다.
+
+```
+id SERIAL
+```
+
+SERIAL은 엄밀히 말하면 데이터 타입은 아니지만, 고유 ID를 만들 때 매우 자주 사용된다. SERIAL을 사용하면 해당 컬럼은 자동으로 INTEGER 타입이 되고, NULL을 허용하지 않으며 새로운 행이 추가될 때마다 자동 증가한다.
+
+| id  | name  |
+| --- | ----- |
+| 1   | Mario |
+| 2   | Luigi |
+| 3   | Peach |
+
+위 예시의 테이블에서 첫 번째 데이터는 ID가 1, 두 번째는 2, 세 번째는 3이 자동으로 부여된다. 즉, 각 행을 구분할 수 있는 고유 번호를 쉽게 만들 수 있다.
+
+MySQL에서는 SERIAL 대신 AUTO_INCREMENT를 사용한다.
+
+```
+id INT AUTO_INCREMENT
+```
+
+기능은 PostgreSQL의 SERIAL과 거의 동일하다. 이처럼 데이터베이스마다 문법은 조금 달라도 같은 기능을 제공하는 경우가 많다.
+
+---
+
+## 3. 문자열 데이터 타입
+
+텍스트를 저장할 때 가장 많이 사용하는 타입은 VARCHAR이다.
+
+```
+name VARCHAR(50)
+```
+
+이 예제는 최대 50글자까지 저장할 수 있는 문자열 컬럼을 의미한다.
+
+```
+홍길동
+김철수
+Mario
+Luigi
+```
+
+예를 들어 위와 같은 값을 저장할 수 있다.
+
+길이 제한 없이 문자열을 저장하고 싶다면 TEXT를 사용한다.
+
+```
+name TEXT
+```
+
+VARCHAR는 최대 길이를 정하지만, TEXT는 사실상 길이 제한 없이 사용할 수 있다.
+
+---
+
+## 4. 날짜와 시간
+
+이벤트나 예약 정보를 저장할 때는 날짜와 시간을 저장해야 하는 경우가 많다. 날짜만 저장할 때는 DATE를 사용한다.
+
+```
+event_date DATE
+```
+
+```
+2025-08-04 // 예시
+```
+
+---
+
+시간만 저장할 때는 TIME을 사용한다.
+
+```
+start_time TIME
+```
+
+```
+14:30:00 // 예시
+```
+
+---
+
+날짜와 시간을 모두 저장하려면 TIMESTAMP를 사용한다.
+
+```
+event_timestamp TIMESTAMP
+```
+
+```
+2025-08-04 14:30:00 // 예시
+```
+
+---
+
+시간대(Time Zone)까지 포함하려면 다음과 같이 작성합니다.
+
+```
+event_timestamp TIMESTAMP WITH TIME ZONE
+```
+
+```
+2025-08-04 14:30:00+09 // 예시
+```
+
+처럼 한국 시간대 정보까지 저장할 수 있다.
+
+---
+
+# 5. BOOLEAN
+
+참(True) 또는 거짓(False)을 저장하려면 BOOLEAN 타입을 사용한다.
+
+```
+is_active BOOLEAN
+```
+
+```
+TRUE
+FALSE
+```
+
+회원 활성화 여부, 게시글 공개 여부 같은 값을 저장할 때 자주 사용한다.
+
+---
+
+정리
+
+실무에서 가장 자주 사용하는 타입은 사실 아래 정도입니다.
+
+```
+id SERIAL
+name VARCHAR(255)
+description TEXT
+price INTEGER
+created_at TIMESTAMP
+is_active BOOLEAN
+```
+
+타입스크립트와 비교해보면 다음처럼 대응될 것이다.
+
+| TypeScript | PostgreSQL |
+| ---------- | ---------- |
+| number     | INTEGER    |
+| number     | BIGINT     |
+| string     | VARCHAR    |
+| string     | TEXT       |
+| boolean    | BOOLEAN    |
+| Date       | TIMESTAMP  |
+
+예를 들어 TypeScript 인터페이스가
+
+```
+interface User {  id: number;  name: string;  bio: string;  isActive: boolean;}
+```
+
+라면 SQL 테이블은 대략
+
+```
+CREATE TABLE users (  id SERIAL,  name VARCHAR(100),  bio TEXT,  is_active BOOLEAN);
+```
+
+처럼 만들어질 것이다.
+
+백엔드 개발자와 협업할 때 왜 아이디나 비밀번호 제한 등을 기획 단계에서 미리 정해두고 문서화하는 것이 필요한지 느낄 수 있었다.
